@@ -58,12 +58,8 @@ import { sameAddress } from '@safe-global/utils/utils/addresses'
 import type { NamedAddress } from '@/components/new-safe/create/types'
 import type { RecoveryQueueItem } from '@/features/recovery/services/recovery-state'
 import { ethers } from 'ethers'
-import {
-  getSafeToL2MigrationDeployment,
-  getSafeMigrationDeployment,
-  getMultiSendDeployments,
-  getSignMessageLibDeployments,
-} from '@safe-global/safe-deployments'
+import { getSafeToL2MigrationDeployment, getSafeMigrationDeployment } from '@/utils/deployments'
+import { getMultiSendDeployments, getSignMessageLibDeployments } from '@safe-global/safe-deployments'
 import {
   Safe__factory,
   Safe_to_l2_migration__factory,

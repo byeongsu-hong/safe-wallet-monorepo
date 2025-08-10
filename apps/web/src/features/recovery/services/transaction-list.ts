@@ -6,7 +6,7 @@ import {
   isChangeThresholdCalldata,
   isMultiSendCalldata,
 } from '@/utils/transaction-calldata'
-import { getSafeSingletonDeployment } from '@safe-global/safe-deployments'
+import { getSafeSingletonDeployment } from '@/utils/deployments'
 import { Interface } from 'ethers'
 import type { BaseTransaction } from '@safe-global/safe-apps-sdk'
 import { type SafeState } from '@safe-global/store/gateway/AUTO_GENERATED/safes'

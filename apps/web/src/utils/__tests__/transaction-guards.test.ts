@@ -11,7 +11,7 @@ import { Safe__factory, Sign_message_lib__factory } from '@safe-global/utils/typ
 import { TransactionInfoType, TransactionTokenType, TransferDirection } from '@safe-global/safe-gateway-typescript-sdk'
 import { ZERO_ADDRESS } from '@safe-global/protocol-kit/dist/src/utils/constants'
 import { txDataBuilder } from '@/tests/builders/safeTx'
-import { getSignMessageLibDeployment } from '@safe-global/safe-deployments'
+import { getSignMessageLibDeployment } from '@/utils/deployments'
 
 describe('transaction-guards', () => {
   describe('isOnChainConfirmationTxData', () => {

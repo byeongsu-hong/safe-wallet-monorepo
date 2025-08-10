@@ -18,7 +18,7 @@ import {
   getSafeL2SingletonDeployment,
   getSafeSingletonDeployment,
   getSafeToL2SetupDeployment,
-} from '@safe-global/safe-deployments'
+} from '@/utils/deployments'
 import { ECOSYSTEM_ID_ADDRESS } from '@/config/constants'
 import type { ReplayedSafeProps, UndeployedSafeProps } from '@safe-global/utils/features/counterfactual/store/types'
 import { activateReplayedSafe, isPredictedSafeProps } from '@/features/counterfactual/utils'

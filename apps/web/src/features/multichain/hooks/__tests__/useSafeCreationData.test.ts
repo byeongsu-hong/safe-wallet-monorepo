@@ -12,7 +12,7 @@ import { type JsonRpcProvider } from 'ethers'
 import { Multi_send__factory } from '@safe-global/utils/types/contracts/factories/@safe-global/safe-deployments/dist/assets/v1.3.0'
 import { type ChainInfo } from '@safe-global/safe-gateway-typescript-sdk'
 import { EMPTY_DATA, ZERO_ADDRESS } from '@safe-global/protocol-kit/dist/src/utils/constants'
-import { getSafeSingletonDeployment, getSafeToL2SetupDeployment } from '@safe-global/safe-deployments'
+import { getSafeSingletonDeployment, getSafeToL2SetupDeployment } from '@/utils/deployments'
 import { PayMethod } from '@safe-global/utils/features/counterfactual/types'
 import { SAFE_CREATION_DATA_ERRORS } from '@safe-global/utils/utils/safe'
 

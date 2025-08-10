@@ -1,5 +1,5 @@
 import { Safe_migration__factory } from '@safe-global/utils/types/contracts'
-import { getCompatibilityFallbackHandlerDeployments, getSafeMigrationDeployment } from '@safe-global/safe-deployments'
+import { getCompatibilityFallbackHandlerDeployments, getSafeMigrationDeployment } from '@/utils/deployments'
 import { hasMatchingDeployment } from '@safe-global/utils/services/contracts/deployments'
 import { type MetaTransactionData, OperationType, type SafeVersion } from '@safe-global/types-kit'
 import type { ChainInfo, TransactionData } from '@safe-global/safe-gateway-typescript-sdk'
@@ -35,8 +35,8 @@ export const createUpdateMigration = (
         ? 'migrateL2Singleton'
         : 'migrateSingleton'
       : chain.l2
-        ? 'migrateL2WithFallbackHandler'
-        : 'migrateWithFallbackHandler'
+      ? 'migrateL2WithFallbackHandler'
+      : 'migrateWithFallbackHandler'
   ) as 'migrateSingleton' // apease typescript
 
   const interfce = Safe_migration__factory.createInterface()

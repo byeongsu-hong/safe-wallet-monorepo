@@ -3,7 +3,7 @@ import type { SafeInfo } from '@safe-global/safe-gateway-typescript-sdk'
 import { zeroPadValue, Interface } from 'ethers'
 import { getSimulationPayload } from '@/components/tx/security/tenderly/utils'
 import * as safeContracts from '@/services/contracts/safeContracts'
-import { getMultiSendCallOnlyDeployment, getSafeSingletonDeployment } from '@safe-global/safe-deployments'
+import { getMultiSendCallOnlyDeployment, getSafeSingletonDeployment } from '@/utils/deployments'
 import EthSafeTransaction from '@safe-global/protocol-kit/dist/src/utils/transactions/SafeTransaction'
 import { ZERO_ADDRESS } from '@safe-global/protocol-kit/dist/src/utils/constants'
 import { generatePreValidatedSignature } from '@safe-global/protocol-kit/dist/src/utils/signatures'
@@ -47,7 +47,7 @@ describe('simulation utils', () => {
             Promise.resolve({
               gasLimit: BigInt(30_000_000),
             }),
-        }) as any,
+        } as any),
     )
   })
   describe('getSimulationPayload', () => {

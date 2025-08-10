@@ -1,5 +1,5 @@
 import { renderHook } from '@/tests/test-utils'
-import { getCompatibilityFallbackHandlerDeployments } from '@safe-global/safe-deployments'
+import { getCompatibilityFallbackHandlerDeployments } from '@/utils/deployments'
 import { useCompatibilityFallbackHandlerDeployments } from '../useCompatibilityFallbackHandlerDeployments'
 import useSafeInfo from '@/hooks/useSafeInfo'
 import { useCurrentChain } from '@/hooks/useChains'

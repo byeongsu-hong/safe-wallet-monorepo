@@ -32,7 +32,7 @@ import {
   getSafeL2SingletonDeployment,
   getSafeSingletonDeployment,
   getSafeToL2SetupDeployment,
-} from '@safe-global/safe-deployments'
+} from '@/utils/deployments'
 import { Safe_to_l2_setup__factory } from '@safe-global/utils/types/contracts'
 import { FEATURES, getLatestSafeVersion } from '@safe-global/utils/utils/chains'
 

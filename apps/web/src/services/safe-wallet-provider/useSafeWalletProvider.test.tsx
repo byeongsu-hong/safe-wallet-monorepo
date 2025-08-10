@@ -14,7 +14,7 @@ import { makeStore } from '@/store'
 import * as messages from '@safe-global/utils/utils/safe-messages'
 import { faker } from '@faker-js/faker'
 import { Interface } from 'ethers'
-import { getCreateCallDeployment } from '@safe-global/safe-deployments'
+import { getCreateCallDeployment } from '@/utils/deployments'
 import * as chainHooks from '@/hooks/useChains'
 import { chainBuilder } from '@/tests/builders/chains'
 

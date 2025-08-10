@@ -4,7 +4,7 @@ import { useTWAPFallbackHandlerAddress } from '@/features/swap/hooks/useIsTWAPFa
 import useSafeInfo from '@/hooks/useSafeInfo'
 import { TWAP_FALLBACK_HANDLER } from '@/features/swap/helpers/utils'
 import { faker } from '@faker-js/faker'
-import { getCompatibilityFallbackHandlerDeployment } from '@safe-global/safe-deployments'
+import { getCompatibilityFallbackHandlerDeployment } from '@/utils/deployments'
 import { safeInfoBuilder } from '@/tests/builders/safe'
 
 jest.mock('@/hooks/useCompatibilityFallbackHandlerDeployments')

@@ -5,7 +5,7 @@ import {
   getFallbackHandlerDeployment,
   getSafeL2SingletonDeployment,
   getSafeSingletonDeployment,
-} from '@safe-global/safe-deployments'
+} from '@/utils/deployments'
 import { type SafeInfo } from '@safe-global/safe-gateway-typescript-sdk'
 import { Interface, JsonRpcProvider } from 'ethers'
 import { createUpdateSafeTxs } from '../safeUpdateParams'

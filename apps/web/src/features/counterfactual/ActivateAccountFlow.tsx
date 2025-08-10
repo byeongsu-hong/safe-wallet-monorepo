@@ -28,7 +28,7 @@ import { useEstimateSafeCreationGas } from '@/components/new-safe/create/useEsti
 import useIsWrongChain from '@/hooks/useIsWrongChain'
 import NetworkWarning from '@/components/new-safe/create/NetworkWarning'
 import CheckWallet from '@/components/common/CheckWallet'
-import { getSafeToL2SetupDeployment } from '@safe-global/safe-deployments'
+import { getSafeToL2SetupDeployment } from '@/utils/deployments'
 import { FEATURES, hasFeature } from '@safe-global/utils/utils/chains'
 import type { UndeployedSafe } from '@safe-global/utils/features/counterfactual/store/types'
 import type { TransactionOptions } from '@safe-global/types-kit'

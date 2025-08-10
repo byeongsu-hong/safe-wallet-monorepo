@@ -1,5 +1,5 @@
 import chains from '@safe-global/utils/config/chains'
-import { getSafeL2SingletonDeployments, getSafeSingletonDeployments } from '@safe-global/safe-deployments'
+import { getSafeL2SingletonDeployment, getSafeSingletonDeployment } from '@/utils/deployments'
 import ExternalStore from '@safe-global/utils/services/ExternalStore'
 import { Gnosis_safe__factory } from '@safe-global/utils/types/contracts'
 import Safe from '@safe-global/protocol-kit'
@@ -29,8 +29,8 @@ export const initSafeSDK = async ({
   if (!isValidMasterCopy(implementationVersionState)) {
     const masterCopy = implementation
 
-    const safeL1Deployment = getSafeSingletonDeployments({ network: chainId, version: safeVersion })
-    const safeL2Deployment = getSafeL2SingletonDeployments({ network: chainId, version: safeVersion })
+    const safeL1Deployment = getSafeSingletonDeployment({ network: chainId, version: safeVersion })
+    const safeL2Deployment = getSafeL2SingletonDeployment({ network: chainId, version: safeVersion })
 
     isL1SafeSingleton = isInDeployments(masterCopy, safeL1Deployment?.networkAddresses[chainId])
     const isL2SafeMasterCopy = isInDeployments(masterCopy, safeL2Deployment?.networkAddresses[chainId])

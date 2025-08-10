@@ -4,7 +4,7 @@ import { Safe_migration__factory } from '@safe-global/utils/types/contracts'
 import { faker } from '@faker-js/faker'
 
 import { createUpdateMigration, isMigrateL2SingletonCall } from '../safe-migrations'
-import { getSafeMigrationDeployment } from '@safe-global/safe-deployments'
+import { getSafeMigrationDeployment } from '@/utils/deployments'
 
 jest.mock('@/services/tx/tx-sender/sdk')
 

@@ -3,7 +3,7 @@ import useSafeInfo from '@/hooks/useSafeInfo'
 import { sameAddress } from '@safe-global/utils/utils/addresses'
 import { useTWAPFallbackHandlerAddress } from '@/features/swap/hooks/useIsTWAPFallbackHandler'
 import { hasMatchingDeployment } from '@safe-global/utils/services/contracts/deployments'
-import { getCompatibilityFallbackHandlerDeployments } from '@safe-global/safe-deployments'
+import { getCompatibilityFallbackHandlerDeployments } from '@/utils/deployments'
 
 /**
  * Hook to check if the Safe's fallback handler (or optionally provided addresses) contain a non-official one.

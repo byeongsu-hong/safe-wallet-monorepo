@@ -1,6 +1,6 @@
 import { SENTINEL_ADDRESS } from '@safe-global/protocol-kit/dist/src/utils/constants'
 import memoize from 'lodash/memoize'
-import { getMultiSendCallOnlyDeployment } from '@safe-global/safe-deployments'
+import { getMultiSendCallOnlyDeployment } from '@/utils/deployments'
 import { type SafeState } from '@safe-global/store/gateway/AUTO_GENERATED/safes'
 import type { Delay } from '@gnosis.pm/zodiac'
 import type { TransactionAddedEvent } from '@gnosis.pm/zodiac/dist/cjs/types/Delay'
