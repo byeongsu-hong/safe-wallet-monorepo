@@ -1,5 +1,5 @@
 import * as safeDeployments from '@safe-global/safe-deployments'
-import * as customDeployments from '@/utils/deployments'
+
 import { type ChainInfo } from '@safe-global/safe-gateway-typescript-sdk'
 
 import * as deployments from '@safe-global/utils/services/contracts/deployments'
