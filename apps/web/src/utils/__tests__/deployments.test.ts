@@ -1,5 +1,8 @@
 import { getSafeSingletonDeployment, getSafeL2SingletonDeployment } from '@/utils/deployments'
-import { getCustomSafeSingletonDeployment, getCustomSafeL2SingletonDeployment } from '@/config/customDeployments'
+import {
+  getCustomSafeSingletonDeployment,
+  getCustomSafeL2SingletonDeployment,
+} from '@safe-global/utils/services/contracts/customDeployments'
 
 // Mock the custom deployments
 jest.mock('@/config/customDeployments', () => ({
