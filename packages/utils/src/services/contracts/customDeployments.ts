@@ -48,7 +48,7 @@ export const findCustomDeployment = (
 
   return deployments.find((deployment) => {
     const versionMatches = !filter?.version || deployment.version === filter.version
-    const networkMatches = !filter?.network || deployment.networkAddresses[filter.network]
+    const networkMatches = !filter?.network || !!deployment.networkAddresses[filter.network]
     const releasedMatches = filter?.released === undefined || deployment.released === filter.released
 
     return versionMatches && networkMatches && releasedMatches

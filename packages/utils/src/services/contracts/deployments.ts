@@ -38,80 +38,72 @@ import { SafeState } from '@safe-global/store/gateway/AUTO_GENERATED/safes'
 
 const toNetworkAddressList = (addresses: string | string[]) => (Array.isArray(addresses) ? addresses : [addresses])
 
-// Generic deployment getter that tries custom deployments first, then falls back to safe-deployments
-const getDeploymentWithFallback = <T>(
-  customGetter: (filter?: DeploymentFilter) => T | undefined,
-  officialGetter: (filter?: DeploymentFilter) => T | undefined,
-) => {
-  return (filter?: DeploymentFilter): T | undefined => {
-    const customDeployment = customGetter(filter)
-    return customDeployment ?? officialGetter(filter)
-  }
+// Enhanced deployment getters that check custom deployments first, then fallback to official
+export const getSafeSingletonDeployment = (filter?: DeploymentFilter): SingletonDeployment | undefined => {
+  const customDeployment = getCustomSafeSingletonDeployment(filter)
+  return customDeployment ?? getOfficialSafeSingletonDeployment(filter)
 }
 
-// Enhanced deployment getters that check custom deployments first
-export const getSafeSingletonDeployment = getDeploymentWithFallback(
-  getCustomSafeSingletonDeployment,
-  getOfficialSafeSingletonDeployment,
-)
+export const getSafeL2SingletonDeployment = (filter?: DeploymentFilter): SingletonDeployment | undefined => {
+  const customDeployment = getCustomSafeL2SingletonDeployment(filter)
+  return customDeployment ?? getOfficialSafeL2SingletonDeployment(filter)
+}
 
-export const getSafeL2SingletonDeployment = getDeploymentWithFallback(
-  getCustomSafeL2SingletonDeployment,
-  getOfficialSafeL2SingletonDeployment,
-)
+export const getMultiSendCallOnlyDeployment = (filter?: DeploymentFilter): SingletonDeployment | undefined => {
+  const customDeployment = getCustomMultiSendCallOnlyDeployment(filter)
+  return customDeployment ?? getOfficialMultiSendCallOnlyDeployment(filter)
+}
 
-export const getMultiSendCallOnlyDeployment = getDeploymentWithFallback(
-  getCustomMultiSendCallOnlyDeployment,
-  getOfficialMultiSendCallOnlyDeployment,
-)
+export const getMultiSendDeployment = (filter?: DeploymentFilter): SingletonDeployment | undefined => {
+  const customDeployment = getCustomMultiSendDeployment(filter)
+  return customDeployment ?? getOfficialMultiSendDeployment(filter)
+}
 
-export const getMultiSendDeployment = getDeploymentWithFallback(
-  getCustomMultiSendDeployment,
-  getOfficialMultiSendDeployment,
-)
+export const getFallbackHandlerDeployment = (filter?: DeploymentFilter): SingletonDeployment | undefined => {
+  const customDeployment = getCustomFallbackHandlerDeployment(filter)
+  return customDeployment ?? getOfficialFallbackHandlerDeployment(filter)
+}
 
-export const getFallbackHandlerDeployment = getDeploymentWithFallback(
-  getCustomFallbackHandlerDeployment,
-  getOfficialFallbackHandlerDeployment,
-)
+export const getProxyFactoryDeployment = (filter?: DeploymentFilter): SingletonDeployment | undefined => {
+  const customDeployment = getCustomProxyFactoryDeployment(filter)
+  return customDeployment ?? getOfficialProxyFactoryDeployment(filter)
+}
 
-export const getProxyFactoryDeployment = getDeploymentWithFallback(
-  getCustomProxyFactoryDeployment,
-  getOfficialProxyFactoryDeployment,
-)
+export const getSignMessageLibDeployment = (filter?: DeploymentFilter): SingletonDeployment | undefined => {
+  const customDeployment = getCustomSignMessageLibDeployment(filter)
+  return customDeployment ?? getOfficialSignMessageLibDeployment(filter)
+}
 
-export const getSignMessageLibDeployment = getDeploymentWithFallback(
-  getCustomSignMessageLibDeployment,
-  getOfficialSignMessageLibDeployment,
-)
+export const getCreateCallDeployment = (filter?: DeploymentFilter): SingletonDeployment | undefined => {
+  const customDeployment = getCustomCreateCallDeployment(filter)
+  return customDeployment ?? getOfficialCreateCallDeployment(filter)
+}
 
-export const getCreateCallDeployment = getDeploymentWithFallback(
-  getCustomCreateCallDeployment,
-  getOfficialCreateCallDeployment,
-)
+export const getSafeMigrationDeployment = (filter?: DeploymentFilter): SingletonDeployment | undefined => {
+  const customDeployment = getCustomSafeMigrationDeployment(filter)
+  return customDeployment ?? getOfficialSafeMigrationDeployment(filter)
+}
 
-export const getSafeMigrationDeployment = getDeploymentWithFallback(
-  getCustomSafeMigrationDeployment,
-  getOfficialSafeMigrationDeployment,
-)
+export const getCompatibilityFallbackHandlerDeployment = (
+  filter?: DeploymentFilter,
+): SingletonDeployment | undefined => {
+  const customDeployment = getCustomCompatibilityFallbackHandlerDeployment(filter)
+  return customDeployment ?? getOfficialCompatibilityFallbackHandlerDeployment(filter)
+}
 
-export const getCompatibilityFallbackHandlerDeployment = getDeploymentWithFallback(
-  getCustomCompatibilityFallbackHandlerDeployment,
-  getOfficialCompatibilityFallbackHandlerDeployment,
-)
+export const getSafeToL2SetupDeployment = (filter?: DeploymentFilter): SingletonDeployment | undefined => {
+  const customDeployment = getCustomSafeToL2SetupDeployment(filter)
+  return customDeployment ?? getOfficialSafeToL2SetupDeployment(filter)
+}
 
-export const getSafeToL2SetupDeployment = getDeploymentWithFallback(
-  getCustomSafeToL2SetupDeployment,
-  getOfficialSafeToL2SetupDeployment,
-)
+export const getSafeToL2MigrationDeployment = (filter?: DeploymentFilter): SingletonDeployment | undefined => {
+  const customDeployment = getCustomSafeToL2MigrationDeployment(filter)
+  return customDeployment ?? getOfficialSafeToL2MigrationDeployment(filter)
+}
 
-export const getSafeToL2MigrationDeployment = getDeploymentWithFallback(
-  getCustomSafeToL2MigrationDeployment,
-  getOfficialSafeToL2MigrationDeployment,
-)
-
-// Special handling for deployments that return SingletonDeploymentV2
-export const getCompatibilityFallbackHandlerDeployments = (filter?: DeploymentFilter): any => {
+export const getCompatibilityFallbackHandlerDeployments = (
+  filter?: DeploymentFilter,
+): SingletonDeploymentV2 | undefined => {
   const customDeployments = getCustomCompatibilityFallbackHandlerDeployments(filter)
   return customDeployments ?? getOfficialCompatibilityFallbackHandlerDeployments(filter)
 }
