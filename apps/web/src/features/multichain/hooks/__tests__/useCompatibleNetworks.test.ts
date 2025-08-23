@@ -11,7 +11,7 @@ import {
   getSafeL2SingletonDeployments,
   getProxyFactoryDeployments,
   getCompatibilityFallbackHandlerDeployments,
-} from '@safe-global/safe-deployments'
+} from '@/utils/deployments'
 import * as useChains from '@/hooks/useChains'
 
 const L1_111_MASTERCOPY_DEPLOYMENTS = getSafeSingletonDeployments({ version: '1.1.1' })?.deployments

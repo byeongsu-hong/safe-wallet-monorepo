@@ -5,6 +5,7 @@ import { AllowanceModule__factory } from '@safe-global/utils/types/contracts'
 import type { JsonRpcProvider, JsonRpcSigner } from 'ethers'
 import { type SafeState } from '@safe-global/store/gateway/AUTO_GENERATED/safes'
 import { sameAddress } from '@safe-global/utils/utils/addresses'
+import { getCustomSpendingLimitDeployment } from '../../config/customSpendingLimitDeployments'
 
 enum ALLOWANCE_MODULE_VERSIONS {
   '0.1.0' = '0.1.0',
@@ -15,6 +16,18 @@ const ALL_VERSIONS = [ALLOWANCE_MODULE_VERSIONS['0.1.0'], ALLOWANCE_MODULE_VERSI
 
 const getDeployment = (chainId: string, modules: SafeState['modules']) => {
   if (!modules?.length) return
+
+  // Check custom deployments first
+  for (let version of ALL_VERSIONS) {
+    const customDeployment = getCustomSpendingLimitDeployment({ network: chainId, version })
+    if (customDeployment) {
+      const deploymentAddress = customDeployment.networkAddresses[chainId]
+      const isMatch = modules?.some((address) => sameAddress(address.value, deploymentAddress))
+      if (isMatch) return customDeployment
+    }
+  }
+
+  // Fallback to official deployments
   for (let version of ALL_VERSIONS) {
     const deployment = getAllowanceModuleDeployment({ network: chainId, version })
     if (!deployment) continue
@@ -25,6 +38,13 @@ const getDeployment = (chainId: string, modules: SafeState['modules']) => {
 }
 
 export const getLatestSpendingLimitAddress = (chainId: string): string | undefined => {
+  // Check custom deployment first
+  const customDeployment = getCustomSpendingLimitDeployment({ network: chainId })
+  if (customDeployment?.networkAddresses[chainId]) {
+    return customDeployment.networkAddresses[chainId]
+  }
+
+  // Fallback to official deployment
   const deployment = getAllowanceModuleDeployment({ network: chainId })
   return deployment?.networkAddresses[chainId]
 }
