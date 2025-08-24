@@ -1,3 +1,4 @@
+import { SafeVersion } from '@safe-global/types-kit'
 import {
   registerCustomDeployments,
   type CustomDeployments,
@@ -31,6 +32,16 @@ const customDeployments: CustomDeployments = {
       contractName: 'GnosisSafe',
       released: true,
     },
+    {
+      networkAddresses: {
+        '124859': '0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552',
+        '124816': '0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552',
+      },
+      version: '1.3.0+L2' as SafeVersion,
+      abi: [],
+      contractName: 'GnosisSafe',
+      released: true,
+    },
   ],
   safeL2Singleton: [
     {
@@ -39,6 +50,16 @@ const customDeployments: CustomDeployments = {
         '124816': '0x3E5c63644E683549055b9Be8653de26E0B4CD36E',
       },
       version: '1.3.0',
+      abi: [],
+      contractName: 'GnosisSafeL2',
+      released: true,
+    },
+    {
+      networkAddresses: {
+        '124859': '0x3E5c63644E683549055b9Be8653de26E0B4CD36E',
+        '124816': '0x3E5c63644E683549055b9Be8653de26E0B4CD36E',
+      },
+      version: '1.3.0+L2' as SafeVersion,
       abi: [],
       contractName: 'GnosisSafeL2',
       released: true,
@@ -64,6 +85,16 @@ const customDeployments: CustomDeployments = {
       contractName: 'GnosisSafeProxyFactory',
       released: true,
     },
+    {
+      networkAddresses: {
+        '124859': '0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2',
+        '124816': '0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2',
+      },
+      version: '1.3.0+L2' as SafeVersion,
+      abi: [],
+      contractName: 'GnosisSafeProxyFactory',
+      released: true,
+    },
   ],
   multiSend: [
     {
@@ -81,6 +112,16 @@ const customDeployments: CustomDeployments = {
         '124816': '0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761',
       },
       version: '1.3.0',
+      abi: [],
+      contractName: 'MultiSend',
+      released: true,
+    },
+    {
+      networkAddresses: {
+        '124859': '0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761',
+        '124816': '0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761',
+      },
+      version: '1.3.0+L2' as SafeVersion,
       abi: [],
       contractName: 'MultiSend',
       released: true,
@@ -106,6 +147,16 @@ const customDeployments: CustomDeployments = {
       contractName: 'MultiSendCallOnly',
       released: true,
     },
+    {
+      networkAddresses: {
+        '124859': '0x40A2aCCbd92BCA938b02010E17A5b8929b49130D',
+        '124816': '0x40A2aCCbd92BCA938b02010E17A5b8929b49130D',
+      },
+      version: '1.3.0+L2' as SafeVersion,
+      abi: [],
+      contractName: 'MultiSendCallOnly',
+      released: true,
+    },
   ],
   fallbackHandler: [
     {
@@ -123,6 +174,16 @@ const customDeployments: CustomDeployments = {
         '124816': '0xf48f2B2d2a534e402487b3ee7C18c33Aec0Fe5e4',
       },
       version: '1.3.0',
+      abi: [],
+      contractName: 'CompatibilityFallbackHandler',
+      released: true,
+    },
+    {
+      networkAddresses: {
+        '124859': '0xf48f2B2d2a534e402487b3ee7C18c33Aec0Fe5e4',
+        '124816': '0xf48f2B2d2a534e402487b3ee7C18c33Aec0Fe5e4',
+      },
+      version: '1.3.0+L2' as SafeVersion,
       abi: [],
       contractName: 'CompatibilityFallbackHandler',
       released: true,
@@ -148,6 +209,16 @@ const customDeployments: CustomDeployments = {
       contractName: 'SignMessageLib',
       released: true,
     },
+    {
+      networkAddresses: {
+        '124859': '0xA65387F16B013cf2Af4605Ad8aA5ec25a2cbA3a2',
+        '124816': '0xA65387F16B013cf2Af4605Ad8aA5ec25a2cbA3a2',
+      },
+      version: '1.3.0+L2' as SafeVersion,
+      abi: [],
+      contractName: 'SignMessageLib',
+      released: true,
+    },
   ],
   createCall: [
     {
@@ -169,6 +240,16 @@ const customDeployments: CustomDeployments = {
       contractName: 'CreateCall',
       released: true,
     },
+    {
+      networkAddresses: {
+        '124859': '0x7cbB62EaA69F79e6873cD1ecB2392971036cFAa4',
+        '124816': '0x7cbB62EaA69F79e6873cD1ecB2392971036cFAa4',
+      },
+      version: '1.3.0+L2' as SafeVersion,
+      abi: [],
+      contractName: 'CreateCall',
+      released: true,
+    },
   ],
   // Add compatibility fallback handler for v1.3.0 on network 124859
   compatibilityFallbackHandler: [
@@ -180,6 +261,16 @@ const customDeployments: CustomDeployments = {
       version: '1.3.0',
       abi: [],
       contractName: 'CompatibilityFallbackHandler',
+      released: true,
+    },
+    {
+      networkAddresses: {
+        '124859': '0x7cbB62EaA69F79e6873cD1ecB2392971036cFAa4',
+        '124816': '0x7cbB62EaA69F79e6873cD1ecB2392971036cFAa4',
+      },
+      version: '1.3.0+L2' as SafeVersion,
+      abi: [],
+      contractName: 'CreateCall',
       released: true,
     },
   ],
