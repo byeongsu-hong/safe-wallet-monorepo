@@ -1,4 +1,4 @@
-import { SafeVersion } from '@safe-global/types-kit'
+import type { SafeVersion } from '@safe-global/types-kit'
 import {
   registerCustomDeployments,
   type CustomDeployments,
