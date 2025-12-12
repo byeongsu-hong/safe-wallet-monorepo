@@ -84,7 +84,8 @@ export const initSafeSDK = async ({
   }
 
   // Helper function to get contract address for network
-  const getContractAddress = (deployment: any) => deployment?.networkAddresses[chainId] || deployment?.defaultAddress
+  const getContractAddress = (deployment: typeof deployments.safe) =>
+    deployment?.networkAddresses[chainId] || deployment?.defaultAddress
 
   // Add to contractNetworks if any custom deployments exist for this network
   const hasCustomDeployments = Object.values(deployments).some((deployment) => deployment?.networkAddresses[chainId])
