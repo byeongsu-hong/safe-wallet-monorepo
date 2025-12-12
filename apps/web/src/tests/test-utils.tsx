@@ -5,13 +5,24 @@ import { RouterContext } from 'next/dist/shared/lib/router-context.shared-runtim
 import type { Theme } from '@mui/material/styles'
 import { ThemeProvider } from '@mui/material/styles'
 import SafeThemeProvider from '@/components/theme/SafeThemeProvider'
-import { type RootState, makeStore, useHydrateStore } from '@/store'
+import { type RootState, makeStore, useHydrateStore, setStoreInstance } from '@/store'
 import * as web3 from '@/hooks/wallets/web3'
 import { Provider } from 'react-redux'
 import { checksumAddress } from '@safe-global/utils/utils/addresses'
 import { faker } from '@faker-js/faker'
 import { userEvent } from '@testing-library/user-event'
 import { createMockWeb3Provider, type MockCallImplementation } from '@safe-global/utils/tests/web3Provider'
+
+export const getAppName = (): string => {
+  const isOfficialHost = process.env.NEXT_PUBLIC_IS_OFFICIAL_HOST === 'true'
+  return isOfficialHost ? 'Safe{Wallet}' : 'Wallet fork'
+}
+
+export const createAppNameRegex = (template: string): RegExp => {
+  const appName = getAppName()
+  const escapedAppName = appName.replace(/[{}]/g, '\\$&')
+  return new RegExp(template.replace('{APP_NAME}', escapedAppName))
+}
 
 const mockRouter = (props: Partial<NextRouter> = {}): NextRouter => ({
   asPath: '/',
@@ -47,6 +58,9 @@ const getProviders: (options: {
 }) => React.JSXElementConstructor<{ children: React.ReactNode }> = ({ routerProps, initialReduxState }) =>
   function ProviderComponent({ children }) {
     const store = makeStore(initialReduxState, { skipBroadcast: true })
+
+    // Set the store instance for imperative usage (e.g., in async functions)
+    setStoreInstance(store)
 
     useHydrateStore(store)
 

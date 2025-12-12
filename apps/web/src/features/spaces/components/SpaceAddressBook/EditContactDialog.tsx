@@ -4,7 +4,6 @@ import ModalDialog from '@/components/common/ModalDialog'
 import { useState, useMemo } from 'react'
 import AddressInputReadOnly from '@/components/common/AddressInputReadOnly'
 import NameInput from '@/components/common/NameInput'
-import type { ChainInfo } from '@safe-global/safe-gateway-typescript-sdk'
 import NetworkMultiSelectorInput from '@/components/common/NetworkSelector/NetworkMultiSelectorInput'
 import { trackEvent } from '@/services/analytics'
 import { SPACE_EVENTS } from '@/services/analytics/events/spaces'
@@ -33,7 +32,7 @@ const EditContactDialog = ({ entry, onClose }: EditContactDialogProps) => {
 
   const defaultNetworks = entry.chainIds
     .map((chainId) => {
-      return configs.find((chain) => chain.chainId === chainId) as ChainInfo
+      return configs.find((chain) => chain.chainId === chainId)
     })
     .filter(Boolean)
 
@@ -122,7 +121,7 @@ const EditContactDialog = ({ entry, onClose }: EditContactDialogProps) => {
             <Typography mb={2}>Edit contact details. Anyone in the space can see it.</Typography>
             <Stack spacing={3}>
               <Box pt={1}>
-                <AddressInputReadOnly address={entry.address} />
+                <AddressInputReadOnly address={entry.address} chainId={entry.chainIds[0]} />
               </Box>
 
               <NameInput name="name" label="Name" required />

@@ -1,8 +1,10 @@
 import type { SafeVersion, TransactionOptions } from '@safe-global/types-kit'
 import { type TransactionResponse, type Eip1193Provider, type Provider } from 'ethers'
 import semverSatisfies from 'semver/functions/satisfies'
-
-import { getSafeInfo, type SafeInfo, type ChainInfo, relayTransaction } from '@safe-global/safe-gateway-typescript-sdk'
+import { type SafeState, cgwApi as safesApi } from '@safe-global/store/gateway/AUTO_GENERATED/safes'
+import { cgwApi as relayApi } from '@safe-global/store/gateway/AUTO_GENERATED/relay'
+import { type Chain } from '@safe-global/store/gateway/AUTO_GENERATED/chains'
+import { getStoreInstance } from '@/store'
 import { getReadOnlyProxyFactoryContract } from '@/services/contracts/safeContracts'
 import type { UrlObject } from 'url'
 import { AppRoutes } from '@/config/routes'
@@ -14,15 +16,20 @@ import { backOff } from 'exponential-backoff'
 import { EMPTY_DATA, ZERO_ADDRESS } from '@safe-global/protocol-kit/dist/src/utils/constants'
 import {
   getCompatibilityFallbackHandlerDeployment,
+  getCompatibilityFallbackHandlerDeployments,
   getProxyFactoryDeployment,
-  getSafeL2SingletonDeployment,
-  getSafeSingletonDeployment,
-  getSafeToL2SetupDeployment,
+  getProxyFactoryDeployments,
+  getSafeL2SingletonDeployments,
+  getSafeSingletonDeployments,
+  getSafeToL2SetupDeployments,
 } from '@/utils/deployments'
 import { ECOSYSTEM_ID_ADDRESS } from '@/config/constants'
 import type { ReplayedSafeProps, UndeployedSafeProps } from '@safe-global/utils/features/counterfactual/store/types'
 import { activateReplayedSafe, isPredictedSafeProps } from '@/features/counterfactual/utils'
-import { getSafeContractDeployment } from '@safe-global/utils/services/contracts/deployments'
+import {
+  getSafeContractDeployment,
+  getCanonicalOrFirstAddress,
+} from '@safe-global/utils/services/contracts/deployments'
 import {
   Safe__factory,
   Safe_proxy_factory__factory,
@@ -44,7 +51,7 @@ export type SafeCreationProps = {
 export const createNewSafe = async (
   provider: Eip1193Provider,
   undeployedSafeProps: UndeployedSafeProps,
-  chain: ChainInfo,
+  chain: Chain,
   options: TransactionOptions,
   callback: (txHash: string) => void,
   isL1SafeSingleton?: boolean,
@@ -77,7 +84,7 @@ export const createNewSafe = async (
 export const computeNewSafeAddress = async (
   provider: Eip1193Provider | string,
   props: PredictedSafeProps,
-  chain: ChainInfo,
+  chain: Chain,
 ): Promise<string> => {
   const safeProvider = new SafeProvider({ provider })
 
@@ -106,7 +113,7 @@ export const encodeSafeSetupCall = (safeAccountConfig: ReplayedSafeProps['safeAc
  * Encode a Safe creation transaction NOT using the Core SDK because it doesn't support that
  * This is used for gas estimation.
  */
-export const encodeSafeCreationTx = (undeployedSafe: UndeployedSafeProps, chain: ChainInfo) => {
+export const encodeSafeCreationTx = (undeployedSafe: UndeployedSafeProps, chain: Chain) => {
   const replayedSafeProps = assertNewUndeployedSafeProps(undeployedSafe, chain)
 
   return Safe_proxy_factory__factory.createInterface().encodeFunctionData('createProxyWithNonce', [
@@ -117,7 +124,7 @@ export const encodeSafeCreationTx = (undeployedSafe: UndeployedSafeProps, chain:
 }
 
 export const estimateSafeCreationGas = async (
-  chain: ChainInfo,
+  chain: Chain,
   provider: Provider,
   from: string,
   undeployedSafe: UndeployedSafeProps,
@@ -135,17 +142,42 @@ export const estimateSafeCreationGas = async (
   return gas
 }
 
-export const pollSafeInfo = async (chainId: string, safeAddress: string): Promise<SafeInfo> => {
-  // exponential delay between attempts for around 4 min
-  return backOff(() => getSafeInfo(chainId, safeAddress), {
-    startingDelay: 750,
-    maxDelay: 20000,
-    numOfAttempts: 19,
-    retry: (e) => {
-      console.info('waiting for client-gateway to provide safe information', e)
-      return true
+/**
+ * Poll for safe info after creation until the safe is indexed by client-gateway
+ * Uses RTK Query with exponential backoff retry (19 attempts over ~4 minutes)
+ */
+export const pollSafeInfo = async (chainId: string, safeAddress: string): Promise<SafeState> => {
+  const store = getStoreInstance()
+
+  // Use exponential backoff to retry RTK Query calls
+  return backOff(
+    async () => {
+      const queryAction = safesApi.endpoints.safesGetSafeV1.initiate(
+        { chainId, safeAddress },
+        {
+          subscribe: false,
+          forceRefetch: true,
+        },
+      )
+
+      const queryPromise = store.dispatch(queryAction)
+      try {
+        const result = await queryPromise.unwrap()
+        return result
+      } finally {
+        queryPromise.unsubscribe()
+      }
     },
-  })
+    {
+      startingDelay: 750,
+      maxDelay: 20000,
+      numOfAttempts: 19,
+      retry: (e) => {
+        console.info('waiting for client-gateway to provide safe information', e)
+        return true
+      },
+    },
+  )
 }
 
 export const getRedirect = (
@@ -177,16 +209,22 @@ export const getRedirect = (
   return redirectUrl + `${appendChar}safe=${address}`
 }
 
-export const relaySafeCreation = async (chain: ChainInfo, undeployedSafeProps: UndeployedSafeProps) => {
+export const relaySafeCreation = async (chain: Chain, undeployedSafeProps: UndeployedSafeProps) => {
+  const store = getStoreInstance()
+
   const replayedSafeProps = assertNewUndeployedSafeProps(undeployedSafeProps, chain)
   const encodedSafeCreationTx = encodeSafeCreationTx(replayedSafeProps, chain)
 
-  const relayResponse = await relayTransaction(chain.chainId, {
-    to: replayedSafeProps.factoryAddress,
-    data: encodedSafeCreationTx,
-    version: replayedSafeProps.safeVersion,
+  const relayAction = relayApi.endpoints.relayRelayV1.initiate({
+    chainId: chain.chainId,
+    relayDto: {
+      to: replayedSafeProps.factoryAddress,
+      data: encodedSafeCreationTx,
+      version: replayedSafeProps.safeVersion,
+    },
   })
 
+  const relayResponse = await store.dispatch(relayAction).unwrap()
   return relayResponse.taskId
 }
 
@@ -204,29 +242,29 @@ export const createNewUndeployedSafeWithoutSalt = (
   safeAccountConfig: Pick<ReplayedSafeProps['safeAccountConfig'], 'owners' | 'threshold'> & {
     paymentReceiver?: string
   },
-  chain: ChainInfo,
+  chain: Chain,
 ): UndeployedSafeWithoutSalt => {
   // Create universal deployment Data across chains:
-  const fallbackHandlerDeployment = getCompatibilityFallbackHandlerDeployment({
+  const fallbackHandlerDeployments = getCompatibilityFallbackHandlerDeployments({
     version: safeVersion,
     network: chain.chainId,
   })
-  const fallbackHandlerAddress = fallbackHandlerDeployment?.networkAddresses[chain.chainId]
-  const safeL2Deployment = getSafeL2SingletonDeployment({ version: safeVersion, network: chain.chainId })
-  const safeL2Address = safeL2Deployment?.networkAddresses[chain.chainId]
+  const fallbackHandlerAddress = getCanonicalOrFirstAddress(fallbackHandlerDeployments, chain.chainId)
+  const safeL2Deployments = getSafeL2SingletonDeployments({ version: safeVersion, network: chain.chainId })
+  const safeL2Address = getCanonicalOrFirstAddress(safeL2Deployments, chain.chainId)
 
-  const safeL1Deployment = getSafeSingletonDeployment({ version: safeVersion, network: chain.chainId })
-  const safeL1Address = safeL1Deployment?.networkAddresses[chain.chainId]
+  const safeL1Deployments = getSafeSingletonDeployments({ version: safeVersion, network: chain.chainId })
+  const safeL1Address = getCanonicalOrFirstAddress(safeL1Deployments, chain.chainId)
 
-  const safeFactoryDeployment = getProxyFactoryDeployment({ version: safeVersion, network: chain.chainId })
-  const safeFactoryAddress = safeFactoryDeployment?.networkAddresses[chain.chainId]
+  const safeFactoryDeployments = getProxyFactoryDeployments({ version: safeVersion, network: chain.chainId })
+  const safeFactoryAddress = getCanonicalOrFirstAddress(safeFactoryDeployments, chain.chainId)
 
   if (!safeL2Address || !safeL1Address || !safeFactoryAddress || !fallbackHandlerAddress) {
     throw new Error('No Safe deployment found')
   }
 
-  const safeToL2SetupDeployment = getSafeToL2SetupDeployment({ version: '1.4.1', network: chain.chainId })
-  const safeToL2SetupAddress = safeToL2SetupDeployment?.networkAddresses[chain.chainId]
+  const safeToL2SetupDeployments = getSafeToL2SetupDeployments({ version: '1.4.1', network: chain.chainId })
+  const safeToL2SetupAddress = getCanonicalOrFirstAddress(safeToL2SetupDeployments, chain.chainId)
   const safeToL2SetupInterface = Safe_to_l2_setup__factory.createInterface()
 
   // Only do migration if the chain supports multiChain deployments and has a SafeToL2Setup deployment
@@ -258,7 +296,7 @@ export const createNewUndeployedSafeWithoutSalt = (
  * @param chain
  * @returns
  */
-export const migrateLegacySafeProps = (predictedSafeProps: PredictedSafeProps, chain: ChainInfo): ReplayedSafeProps => {
+export const migrateLegacySafeProps = (predictedSafeProps: PredictedSafeProps, chain: Chain): ReplayedSafeProps => {
   const safeVersion = predictedSafeProps.safeDeploymentConfig?.safeVersion
   const saltNonce = predictedSafeProps.safeDeploymentConfig?.saltNonce
   const { chainId } = chain
@@ -298,7 +336,7 @@ export const migrateLegacySafeProps = (predictedSafeProps: PredictedSafeProps, c
   }
 }
 
-export const assertNewUndeployedSafeProps = (props: UndeployedSafeProps, chain: ChainInfo): ReplayedSafeProps => {
+export const assertNewUndeployedSafeProps = (props: UndeployedSafeProps, chain: Chain): ReplayedSafeProps => {
   if (isPredictedSafeProps(props)) {
     return migrateLegacySafeProps(props, chain)
   }

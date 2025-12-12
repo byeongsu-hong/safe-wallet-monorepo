@@ -1,7 +1,7 @@
 import { useCurrentChain } from '@/hooks/useChains'
 import useSafeAddress from '@/hooks/useSafeAddress'
 import { useCallback, useEffect, type ReactElement } from 'react'
-import type { ChainInfo } from '@safe-global/safe-gateway-typescript-sdk'
+import type { Chain } from '@safe-global/store/gateway/AUTO_GENERATED/chains'
 import { Controller, useFormContext, useWatch } from 'react-hook-form'
 import { useRouter } from 'next/router'
 import { getNetworkLink } from '@/components/common/NetworkSelector'
@@ -11,6 +11,7 @@ import { hasCanonicalDeployment } from '@safe-global/utils/services/contracts/de
 import { hasMultiChainCreationFeatures } from '@/features/multichain/utils/utils'
 import { getLatestSafeVersion } from '@safe-global/utils/utils/chains'
 import NetworkMultiSelectorInput from '@/components/common/NetworkSelector/NetworkMultiSelectorInput'
+import { useSafeApps } from '@/hooks/safe-apps/useSafeApps'
 
 const SafeCreationNetworkInput = ({
   name,
@@ -22,26 +23,26 @@ const SafeCreationNetworkInput = ({
   const router = useRouter()
   const safeAddress = useSafeAddress()
   const currentChain = useCurrentChain()
+  const { currentSafeApp } = useSafeApps()
 
   const {
     formState: { errors },
     control,
   } = useFormContext()
 
-  const selectedNetworks: ChainInfo[] = useWatch({ control, name: SetNameStepFields.networks })
+  const selectedNetworks: Chain[] = useWatch({ control, name: SetNameStepFields.networks })
 
   const updateCurrentNetwork = useCallback(
-    (chains: ChainInfo[]) => {
+    (chains: Chain[]) => {
       if (chains.length !== 1) return
-      const shortName = chains[0].shortName
-      const networkLink = getNetworkLink(router, safeAddress, shortName)
+      const networkLink = getNetworkLink(router, safeAddress, chains[0], currentSafeApp)
       router.replace(networkLink)
     },
-    [router, safeAddress],
+    [router, safeAddress, currentSafeApp],
   )
 
   const isOptionDisabled = useCallback(
-    (optionNetwork: ChainInfo) => {
+    (optionNetwork: Chain) => {
       // Initially all networks are always available
       if (selectedNetworks.length === 0) {
         return false

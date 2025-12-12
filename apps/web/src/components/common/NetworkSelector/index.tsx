@@ -2,7 +2,6 @@ import ChainIndicator from '@/components/common/ChainIndicator'
 import Track from '@/components/common/Track'
 import { useDarkMode } from '@/hooks/useDarkMode'
 import { useAppSelector } from '@/store'
-import { selectChains } from '@/store/chainsSlice'
 import { useTheme } from '@mui/material/styles'
 import Link from 'next/link'
 import {
@@ -22,6 +21,7 @@ import partition from 'lodash/partition'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import useChains, { useCurrentChain } from '@/hooks/useChains'
 import type { NextRouter } from 'next/router'
+import type { SafeApp as SafeAppData } from '@safe-global/store/gateway/AUTO_GENERATED/safe-apps'
 import { useRouter } from 'next/router'
 import css from './styles.module.css'
 import { type ReactElement, useCallback, useMemo, useState } from 'react'
@@ -32,18 +32,19 @@ import { sameAddress } from '@safe-global/utils/utils/addresses'
 import uniq from 'lodash/uniq'
 import { useCompatibleNetworks } from '@safe-global/utils/features/multichain/hooks/useCompatibleNetworks'
 import { useSafeCreationData } from '@/features/multichain/hooks/useSafeCreationData'
-import { type ChainInfo } from '@safe-global/safe-gateway-typescript-sdk'
 import { type Chain } from '@safe-global/store/gateway/AUTO_GENERATED/chains'
 import PlusIcon from '@/public/images/common/plus.svg'
 import useAddressBook from '@/hooks/useAddressBook'
 import { CreateSafeOnSpecificChain } from '@/features/multichain/components/CreateSafeOnNewChain'
 import { useGetSafeOverviewQuery } from '@/store/api/gateway'
 import useChainId from '@/hooks/useChainId'
-import useBalances from '@/hooks/useBalances'
 import { skipToken } from '@reduxjs/toolkit/query'
 import { InfoOutlined } from '@mui/icons-material'
 import { selectUndeployedSafe } from '@/store/slices'
 import { hasMultiChainAddNetworkFeature } from '@/features/multichain/utils/utils'
+import { useSafeApps } from '@/hooks/safe-apps/useSafeApps'
+import { AppRoutes } from '@/config/routes'
+import { useVisibleBalances } from '@/hooks/useVisibleBalances'
 
 export const ChainIndicatorWithFiatBalance = ({
   isSelected,
@@ -51,14 +52,14 @@ export const ChainIndicatorWithFiatBalance = ({
   safeAddress,
 }: {
   isSelected: boolean
-  chain: ChainInfo
+  chain: Pick<Chain, 'chainId'>
   safeAddress: string
 }) => {
   const undeployedSafe = useAppSelector((state) => selectUndeployedSafe(state, chain.chainId, safeAddress))
   const currentChainId = useChainId()
   const isCurrentChain = currentChainId === chain.chainId
 
-  const { balances } = useBalances()
+  const { balances } = useVisibleBalances()
   const { data: safeOverview } = useGetSafeOverviewQuery(
     !isCurrentChain && !undeployedSafe ? { safeAddress, chainId: chain.chainId } : skipToken,
   )
@@ -67,19 +68,26 @@ export const ChainIndicatorWithFiatBalance = ({
   return <ChainIndicator responsive={isSelected} chainId={chain.chainId} fiatValue={fiatValue} inline />
 }
 
-export const getNetworkLink = (router: NextRouter, safeAddress: string, networkShortName: string) => {
+export const getNetworkLink = (
+  router: NextRouter,
+  safeAddress: string,
+  chainInfo: Pick<Chain, 'chainId' | 'shortName'>,
+  currentSafeApp?: SafeAppData,
+) => {
+  const { shortName, chainId } = chainInfo
   const isSafeOpened = safeAddress !== ''
 
   const query = (
     isSafeOpened
       ? {
-          safe: `${networkShortName}:${safeAddress}`,
+          safe: `${shortName}:${safeAddress}`,
         }
-      : { chain: networkShortName }
+      : { chain: shortName }
   ) as {
     safe?: string
     chain?: string
     safeViewRedirectURL?: string
+    appUrl?: string
   }
 
   const route = {
@@ -87,8 +95,20 @@ export const getNetworkLink = (router: NextRouter, safeAddress: string, networkS
     query,
   }
 
-  if (router.query?.safeViewRedirectURL) {
-    route.query.safeViewRedirectURL = router.query?.safeViewRedirectURL.toString()
+  const queryParams = ['safeViewRedirectURL', 'appUrl'] as const
+
+  for (const key of queryParams) {
+    if (router.query?.[key]) {
+      route.query[key] = router.query?.[key].toString()
+    }
+  }
+
+  // If we are currently on an app page and switching networks, determine if the app supports the target network.
+  // If not supported, redirect to the apps list instead of keeping the app open.
+  // If the app supports the target network, keep the app open.
+  if (router.pathname === AppRoutes.apps.open && currentSafeApp && !currentSafeApp.chainIds.includes(chainId)) {
+    delete route.query.appUrl
+    route.pathname = AppRoutes.apps.index
   }
 
   return route
@@ -168,7 +188,7 @@ const UndeployedNetworks = ({
   closeNetworkSelect,
 }: {
   deployedChains: string[]
-  chains: ChainInfo[]
+  chains: Chain[]
   safeAddress: string
   closeNetworkSelect: () => void
 }) => {
@@ -185,13 +205,13 @@ const UndeployedNetworks = ({
   const safeCreationResult = useSafeCreationData(safeAddress, deployedChainInfos)
   const [safeCreationData, safeCreationDataError, safeCreationLoading] = safeCreationResult
 
-  const allCompatibleChains = useCompatibleNetworks(safeCreationData, configs as Chain[])
+  const allCompatibleChains = useCompatibleNetworks(safeCreationData, configs)
   const isUnsupportedSafeCreationVersion = Boolean(!allCompatibleChains?.length)
 
   const availableNetworks = useMemo(
     () =>
       allCompatibleChains?.filter(
-        (config) => !deployedChains.includes(config.chainId) && hasMultiChainAddNetworkFeature(config as ChainInfo),
+        (config) => !deployedChains.includes(config.chainId) && hasMultiChainAddNetworkFeature(config),
       ) || [],
     [allCompatibleChains, deployedChains],
   )
@@ -319,7 +339,7 @@ const UndeployedNetworks = ({
       </Collapse>
       {replayOnChain && safeCreationData && (
         <CreateSafeOnSpecificChain
-          chain={replayOnChain as ChainInfo}
+          chain={replayOnChain}
           safeAddress={safeAddress}
           open
           onClose={onFormClose}
@@ -346,7 +366,7 @@ const NetworkSelector = ({
   const router = useRouter()
   const safeAddress = useSafeAddress()
   const currentChain = useCurrentChain()
-  const chains = useAppSelector(selectChains)
+  const { currentSafeApp } = useSafeApps()
 
   const isSafeOpened = safeAddress !== ''
 
@@ -377,7 +397,7 @@ const NetworkSelector = ({
 
   const renderMenuItem = useCallback(
     (chainId: string, isSelected: boolean) => {
-      const chain = chains.data.find((chain) => chain.chainId === chainId)
+      const chain = configs.find((chain) => chain.chainId === chainId)
       if (!chain) return null
 
       const onSwitchNetwork = () => {
@@ -394,7 +414,7 @@ const NetworkSelector = ({
           onClick={onSwitchNetwork}
         >
           <Link
-            href={getNetworkLink(router, safeAddress, chain.shortName)}
+            href={getNetworkLink(router, safeAddress, chain, currentSafeApp)}
             onClick={onChainSelect}
             className={css.item}
           >
@@ -403,7 +423,7 @@ const NetworkSelector = ({
         </MenuItem>
       )
     },
-    [chains.data, onChainSelect, router, safeAddress],
+    [configs, onChainSelect, router, safeAddress, currentSafeApp],
   )
 
   const handleClose = () => {

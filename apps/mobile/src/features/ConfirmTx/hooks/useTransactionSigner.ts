@@ -4,7 +4,7 @@ import { useTransactionData } from '@/src/features/ConfirmTx/hooks/useTransactio
 import { useTxSignerState } from '@/src/features/ConfirmTx/hooks/useTxSignerState'
 
 export const useTransactionSigner = (txId: string) => {
-  const { data: txDetails, isFetching, isError, error } = useTransactionData(txId)
+  const { data: txDetails, isLoading, isError, error, refetch } = useTransactionData(txId)
 
   const detailedExecutionInfo = useMemo(() => txDetails?.detailedExecutionInfo as MultisigExecutionDetails, [txDetails])
 
@@ -14,8 +14,9 @@ export const useTransactionSigner = (txId: string) => {
     txDetails,
     detailedExecutionInfo,
     signerState,
-    isLoading: isFetching,
+    isLoading: !!isLoading,
     isError,
     error,
+    refetch,
   }
 }

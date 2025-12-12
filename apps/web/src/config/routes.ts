@@ -4,6 +4,7 @@ export const AppRoutes = {
   wc: '/wc',
   userSettings: '/user-settings',
   terms: '/terms',
+  safeLabsTerms: '/safe-labs-terms',
   swap: '/swap',
   stake: '/stake',
   privacy: '/privacy',
@@ -24,6 +25,7 @@ export const AppRoutes = {
     bookmarked: '/apps/bookmarked',
   },
   balances: {
+    positions: '/balances/positions',
     nfts: '/balances/nfts',
     index: '/balances',
   },
@@ -70,3 +72,11 @@ export const AppRoutes = {
     accounts: '/welcome/accounts',
   },
 }
+
+export const UNDEPLOYED_SAFE_BLOCKED_ROUTES = [
+  AppRoutes.bridge,
+  AppRoutes.swap,
+  AppRoutes.stake,
+  AppRoutes.earn,
+  ...Object.values(AppRoutes.apps),
+]

@@ -1,7 +1,7 @@
+import { ImplementationVersionState } from '@safe-global/store/gateway/types'
 import React, { useContext, useMemo, type ReactElement } from 'react'
 import { useRouter } from 'next/router'
 import { Divider, ListItemButton } from '@mui/material'
-import { ImplementationVersionState } from '@safe-global/safe-gateway-typescript-sdk'
 
 import {
   SidebarList,
@@ -12,12 +12,14 @@ import {
 } from '@/components/sidebar/SidebarList'
 import { type NavItem, navItems } from './config'
 import useSafeInfo from '@/hooks/useSafeInfo'
-import { AppRoutes } from '@/config/routes'
+import { AppRoutes, UNDEPLOYED_SAFE_BLOCKED_ROUTES } from '@/config/routes'
 import { useQueuedTxsLength } from '@/hooks/useTxQueue'
 import { useCurrentChain } from '@/hooks/useChains'
 import { isRouteEnabled } from '@/utils/chains'
-import { trackEvent } from '@/services/analytics'
+import { trackEvent, OVERVIEW_EVENTS } from '@/services/analytics'
 import { SWAP_EVENTS, SWAP_LABELS } from '@/services/analytics/events/swaps'
+import { MixpanelEventParams } from '@/services/analytics/mixpanel-events'
+import { GA_LABEL_TO_MIXPANEL_PROPERTY } from '@/services/analytics/ga-mixpanel-mapping'
 import { GeoblockingContext } from '@/components/common/GeoblockingProvider'
 import { STAKE_EVENTS, STAKE_LABELS } from '@/services/analytics/events/stake'
 import { Tooltip } from '@mui/material'
@@ -30,14 +32,6 @@ const getSubdirectory = (pathname: string): string => {
 }
 
 const geoBlockedRoutes = [AppRoutes.bridge, AppRoutes.swap, AppRoutes.stake, AppRoutes.earn]
-
-const undeployedSafeBlockedRoutes = [
-  AppRoutes.bridge,
-  AppRoutes.swap,
-  AppRoutes.stake,
-  AppRoutes.apps.index,
-  AppRoutes.earn,
-]
 
 const customSidebarEvents: { [key: string]: { event: any; label: string } } = {
   [AppRoutes.bridge]: { event: BRIDGE_EVENTS.OPEN_BRIDGE, label: BRIDGE_LABELS.sidebar },
@@ -67,7 +61,7 @@ const Navigation = (): ReactElement => {
   const enabledNavItems = useMemo(() => {
     return safe.deployed
       ? visibleNavItems
-      : visibleNavItems.filter((item) => !undeployedSafeBlockedRoutes.includes(item.href))
+      : visibleNavItems.filter((item) => !UNDEPLOYED_SAFE_BLOCKED_ROUTES.includes(item.href))
   }, [safe.deployed, visibleNavItems])
 
   const getBadge = (item: NavItem) => {
@@ -87,11 +81,21 @@ const Navigation = (): ReactElement => {
     return href
   }
 
-  const handleNavigationClick = (href: string) => {
-    const eventInfo = customSidebarEvents[href]
+  const handleNavigationClick = (item: NavItem) => {
+    const eventInfo = customSidebarEvents[item.href]
     if (eventInfo) {
-      trackEvent({ ...eventInfo.event, label: eventInfo.label })
+      if (item.href === AppRoutes.swap) {
+        trackEvent(
+          { ...eventInfo.event, label: eventInfo.label },
+          { [MixpanelEventParams.ENTRY_POINT]: GA_LABEL_TO_MIXPANEL_PROPERTY[SWAP_LABELS.sidebar] },
+        )
+      } else {
+        trackEvent({ ...eventInfo.event, label: eventInfo.label })
+      }
     }
+
+    // Track sidebar click for all navigation items
+    trackEvent({ ...OVERVIEW_EVENTS.SIDEBAR_CLICKED }, { [MixpanelEventParams.SIDEBAR_ELEMENT]: item.label })
   }
 
   return (
@@ -125,7 +129,7 @@ const Navigation = (): ReactElement => {
                 sx={{ padding: 0 }}
                 disabled={isDisabled}
                 selected={isSelected}
-                onClick={isDisabled ? undefined : () => handleNavigationClick(item.href)}
+                onClick={isDisabled ? undefined : () => handleNavigationClick(item)}
                 key={item.href}
               >
                 <SidebarListItemButton

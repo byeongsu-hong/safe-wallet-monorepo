@@ -1,5 +1,5 @@
 import * as useChains from '@/hooks/useChains'
-import { type ChainInfo } from '@safe-global/safe-gateway-typescript-sdk'
+import { type Chain } from '@safe-global/store/gateway/AUTO_GENERATED/chains'
 import { FormProvider, useForm } from 'react-hook-form'
 import SafeCreationNetworkInput from '.'
 import { chainBuilder } from '@/tests/builders/chains'
@@ -10,7 +10,7 @@ import * as router from 'next/router'
 import { FEATURES } from '@safe-global/utils/utils/chains'
 
 const TestForm = ({ isAdvancedFlow = false }: { isAdvancedFlow?: boolean }) => {
-  const formMethods = useForm<{ networks: ChainInfo[] }>({
+  const formMethods = useForm<{ networks: Chain[] }>({
     mode: 'all',
     defaultValues: {
       networks: [],
@@ -68,14 +68,10 @@ describe('NetworkMultiSelector', () => {
 
   it('should be possible to select and deselect networks', async () => {
     jest.spyOn(useChains, 'useCurrentChain').mockReturnValue(mockChains[0])
-    const { getByRole, queryByText, getByText, getByTestId, getAllByRole } = render(<TestForm />, {
-      initialReduxState: {
-        chains: {
-          data: mockChains,
-          loading: false,
-        },
-      },
-    })
+    jest.spyOn(useChains, 'default').mockReturnValue({ configs: mockChains, loading: false })
+    jest.spyOn(useChains, 'useChain').mockImplementation((chainId) => mockChains.find((c) => c.chainId === chainId))
+
+    const { getByRole, queryByText, getByText, getByTestId, getAllByRole } = render(<TestForm />)
     const input = getByRole('combobox')
 
     act(() => {
@@ -171,14 +167,10 @@ describe('NetworkMultiSelector', () => {
 
   it('should disable all other chains when zkSync gets selected first', async () => {
     jest.spyOn(useChains, 'useCurrentChain').mockReturnValue(mockChains[0])
-    const { getByRole, queryByText, getByText, getAllByRole } = render(<TestForm />, {
-      initialReduxState: {
-        chains: {
-          data: mockChains,
-          loading: false,
-        },
-      },
-    })
+    jest.spyOn(useChains, 'default').mockReturnValue({ configs: mockChains, loading: false })
+    jest.spyOn(useChains, 'useChain').mockImplementation((chainId) => mockChains.find((c) => c.chainId === chainId))
+
+    const { getByRole, queryByText, getByText, getAllByRole } = render(<TestForm />)
     const input = getByRole('combobox')
 
     act(() => {
@@ -223,14 +215,10 @@ describe('NetworkMultiSelector', () => {
     } as unknown as router.NextRouter)
 
     jest.spyOn(useChains, 'useCurrentChain').mockReturnValue(mockChains[0])
-    const { getByRole, queryByText, getByText, getAllByRole } = render(<TestForm />, {
-      initialReduxState: {
-        chains: {
-          data: mockChains,
-          loading: false,
-        },
-      },
-    })
+    jest.spyOn(useChains, 'default').mockReturnValue({ configs: mockChains, loading: false })
+    jest.spyOn(useChains, 'useChain').mockImplementation((chainId) => mockChains.find((c) => c.chainId === chainId))
+
+    const { getByRole, queryByText, getByText, getAllByRole } = render(<TestForm />)
     const input = getByRole('combobox')
 
     act(() => {
@@ -268,14 +256,10 @@ describe('NetworkMultiSelector', () => {
 
   it('should only allow single chain selection if advanced flow', async () => {
     jest.spyOn(useChains, 'useCurrentChain').mockReturnValue(mockChains[0])
-    const { getByRole, queryByText, getByText, getByTestId, getAllByRole } = render(<TestForm isAdvancedFlow />, {
-      initialReduxState: {
-        chains: {
-          data: mockChains,
-          loading: false,
-        },
-      },
-    })
+    jest.spyOn(useChains, 'default').mockReturnValue({ configs: mockChains, loading: false })
+    jest.spyOn(useChains, 'useChain').mockImplementation((chainId) => mockChains.find((c) => c.chainId === chainId))
+
+    const { getByRole, queryByText, getByText, getByTestId, getAllByRole } = render(<TestForm isAdvancedFlow />)
     const input = getByRole('combobox')
 
     act(() => {
@@ -318,6 +302,97 @@ describe('NetworkMultiSelector', () => {
       const allOptions = getAllByRole('option')
       expect(allOptions).toHaveLength(5)
       allOptions.forEach((option) => expect(option).toHaveAttribute('aria-disabled', 'false'))
+    })
+  })
+
+  it.each([
+    { key: 'appUrl', value: 'https://example.com' },
+    { key: 'safeViewRedirectURL', value: 'https://redirect.example.com' },
+  ])('should keep the $key query param when switching chains', async ({ key, value }) => {
+    const mockRouterReplace = jest.fn()
+    jest.spyOn(router, 'useRouter').mockReturnValue({
+      replace: mockRouterReplace,
+      query: { chain: 'eth', [key]: value },
+      pathname: '/new-safe/create',
+    } as unknown as router.NextRouter)
+
+    jest.spyOn(useChains, 'useCurrentChain').mockReturnValue(mockChains[0])
+    jest.spyOn(useChains, 'default').mockReturnValue({ configs: mockChains, loading: false })
+    jest.spyOn(useChains, 'useChain').mockImplementation((chainId) => mockChains.find((c) => c.chainId === chainId))
+
+    const { getByRole, getByText, getAllByRole, queryByText } = render(<TestForm />)
+    const input = getByRole('combobox')
+
+    act(() => {
+      userEvent.click(input)
+    })
+
+    // All options are visible and enabled initially
+    await waitFor(() => {
+      const allOptions = getAllByRole('option')
+      expect(allOptions).toHaveLength(5)
+      allOptions.forEach((option) => expect(option).toHaveAttribute('aria-disabled', 'false'))
+      expect(queryByText('Optimism')).toBeVisible()
+    })
+
+    // Select Optimism to trigger a chain switch
+    act(() => {
+      userEvent.click(getByText('Optimism'))
+    })
+
+    await waitFor(() => {
+      expect(mockRouterReplace).toHaveBeenCalledWith({
+        pathname: '/new-safe/create',
+        query: {
+          chain: 'oeth',
+          [key]: value,
+        },
+      })
+    })
+  })
+  it.each([
+    { key: 'appUrl', value: 'https://example.com' },
+    { key: 'safeViewRedirectURL', value: 'https://redirect.example.com' },
+  ])('should keep the $key query param when switching chains', async ({ key, value }) => {
+    const mockRouterReplace = jest.fn()
+    jest.spyOn(router, 'useRouter').mockReturnValue({
+      replace: mockRouterReplace,
+      query: { chain: 'eth', [key]: value },
+      pathname: '/new-safe/create',
+    } as unknown as router.NextRouter)
+
+    jest.spyOn(useChains, 'useCurrentChain').mockReturnValue(mockChains[0])
+    jest.spyOn(useChains, 'default').mockReturnValue({ configs: mockChains, loading: false })
+    jest.spyOn(useChains, 'useChain').mockImplementation((chainId) => mockChains.find((c) => c.chainId === chainId))
+
+    const { getByRole, getByText, getAllByRole, queryByText } = render(<TestForm />)
+    const input = getByRole('combobox')
+
+    act(() => {
+      userEvent.click(input)
+    })
+
+    // All options are visible and enabled initially
+    await waitFor(() => {
+      const allOptions = getAllByRole('option')
+      expect(allOptions).toHaveLength(5)
+      allOptions.forEach((option) => expect(option).toHaveAttribute('aria-disabled', 'false'))
+      expect(queryByText('Optimism')).toBeVisible()
+    })
+
+    // Select Optimism to trigger a chain switch
+    act(() => {
+      userEvent.click(getByText('Optimism'))
+    })
+
+    await waitFor(() => {
+      expect(mockRouterReplace).toHaveBeenCalledWith({
+        pathname: '/new-safe/create',
+        query: {
+          chain: 'oeth',
+          [key]: value,
+        },
+      })
     })
   })
 })

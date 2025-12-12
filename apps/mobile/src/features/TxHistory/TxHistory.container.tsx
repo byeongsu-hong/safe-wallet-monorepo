@@ -8,9 +8,12 @@ import { useDefinedActiveSafe } from '@/src/store/hooks/activeSafe'
 import { useAppDispatch } from '@/src/store/hooks'
 import { useLocalSearchParams } from 'expo-router'
 import Logger from '@/src/utils/logger'
+import useSafeInfo from '@/src/hooks/useSafeInfo'
+import BadgeManager from '@/src/services/notifications/BadgeManager'
 
 export function TxHistoryContainer() {
   const activeSafe = useDefinedActiveSafe()
+  const { safe } = useSafeInfo()
   const dispatch = useAppDispatch()
   const [isRefreshing, setIsRefreshing] = React.useState(false)
   const { fromNotification } = useLocalSearchParams<{ fromNotification?: string }>()
@@ -18,6 +21,7 @@ export function TxHistoryContainer() {
   const queryArgs = {
     chainId: activeSafe.chainId,
     safeAddress: activeSafe.address,
+    reloadTag: safe.txHistoryTag,
   }
 
   const {
@@ -28,8 +32,16 @@ export function TxHistoryContainer() {
     isFetchingNextPage,
     isLoading,
     isUninitialized,
+    isError,
     refetch,
   } = useGetTxsHistoryInfiniteQuery(queryArgs)
+
+  // Clear badge when user views transaction history (whether from notification tap or normal navigation)
+  React.useEffect(() => {
+    BadgeManager.clearAllBadges().catch((error) => {
+      Logger.error('TxHistoryContainer: Failed to clear badges', error)
+    })
+  }, [])
 
   // Force refetch when coming from push notification
   React.useEffect(() => {
@@ -93,6 +105,7 @@ export function TxHistoryContainer() {
       onEndReached={onEndReached}
       isLoading={isLoadingState}
       isLoadingNext={isFetchingNextPage}
+      isError={isError}
       onRefresh={onRefresh}
       refreshing={isRefreshing}
     />

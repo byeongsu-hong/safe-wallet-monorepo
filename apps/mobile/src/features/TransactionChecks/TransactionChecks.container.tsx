@@ -11,13 +11,12 @@ import { TransactionChecksView } from './components/TransactionChecksView'
 import { useAppSelector } from '@/src/store/hooks'
 import { selectActiveChain } from '@/src/store/chains'
 import { isTxSimulationEnabled } from '@safe-global/utils/components/tx/security/tenderly/utils'
-import { SafeInfo } from '@safe-global/safe-gateway-typescript-sdk'
 import { useTransactionSigner } from '@/src/features/ConfirmTx/hooks/useTransactionSigner'
 import { FEATURES } from '@safe-global/utils/utils/chains'
 import { useHasFeature } from '@/src/hooks/useHasFeature'
 
 export const TransactionChecksContainer = () => {
-  const { simulation, simulateTransaction, simulationLink, _simulationRequestStatus } = useSimulation()
+  const { simulationData, simulateTransaction, simulationLink, _simulationRequestStatus } = useSimulation()
   const { scanTransaction, blockaidPayload, error: blockaidError, loading: blockaidLoading } = useBlockaid()
   const activeSafe = useDefinedActiveSafe()
   const safeInfo = useSafeInfo()
@@ -46,7 +45,7 @@ export const TransactionChecksContainer = () => {
         [
           simulationEnabled &&
             simulateTransaction({
-              safe: safeInfo.safe as SafeInfo,
+              safe: safeInfo.safe,
               executionOwner,
               transactions: safeTx,
             }),
@@ -64,7 +63,12 @@ export const TransactionChecksContainer = () => {
 
   return (
     <TransactionChecksView
-      tenderly={{ enabled: simulationEnabled, fetchStatus: _simulationRequestStatus, simulationLink, simulation }}
+      tenderly={{
+        enabled: simulationEnabled,
+        fetchStatus: _simulationRequestStatus,
+        simulationLink,
+        simulation: simulationData,
+      }}
       blockaid={{ enabled: blockaidEnabled, loading: blockaidLoading, error: blockaidError, payload: blockaidPayload }}
     />
   )

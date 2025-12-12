@@ -61,12 +61,25 @@ declare module '@mui/material/Button' {
 
   export interface ButtonPropsVariantOverrides {
     danger: true
+    neutral: true
   }
 }
 
 declare module '@mui/material/IconButton' {
   export interface IconButtonPropsColorOverrides {
     border: true
+  }
+}
+
+declare module '@mui/material/Chip' {
+  export interface ChipPropsSizeOverrides {
+    tiny: true
+  }
+}
+
+declare module '@mui/material/Alert' {
+  export interface AlertPropsColorOverrides {
+    background: true
   }
 }
 
@@ -145,6 +158,23 @@ const createSafeTheme = (mode: PaletteMode): Theme => {
               '&:hover': {
                 color: theme.palette.error.dark,
                 backgroundColor: theme.palette.error.light,
+              },
+            }),
+          },
+          {
+            props: { variant: 'neutral' },
+            style: ({ theme }) => ({
+              backgroundColor: theme.palette.background.main,
+              borderColor: theme.palette.background.main,
+              color: theme.palette.text.primary,
+              fontWeight: 'bold',
+              fontSize: '14px',
+              minHeight: '40px',
+              gap: '7px',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                backgroundColor: theme.palette.border.light,
+                borderColor: theme.palette.border.light,
               },
             }),
           },
@@ -316,6 +346,16 @@ const createSafeTheme = (mode: PaletteMode): Theme => {
             backgroundColor: theme.palette.secondary.light,
             height: '24px',
           }),
+          //@ts-ignore this is not detected even though it is declared above
+          sizeTiny: {
+            fontSize: '11px',
+            height: 'auto',
+            lineHeight: '16px',
+
+            '& .MuiChip-label': {
+              padding: '2px 4px',
+            },
+          },
         },
       },
       MuiAlert: {
@@ -350,6 +390,15 @@ const createSafeTheme = (mode: PaletteMode): Theme => {
             },
             '&.MuiPaper-root': {
               backgroundColor: theme.palette.warning.background,
+            },
+          }),
+          // @ts-ignore
+          standardBackground: ({ theme }) => ({
+            '& .MuiAlert-icon': {
+              color: theme.palette.text.primary,
+            },
+            '&.MuiPaper-root': {
+              backgroundColor: theme.palette.background.main,
             },
           }),
           root: ({ theme }) => ({

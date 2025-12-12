@@ -14,6 +14,8 @@ import {
   isCancellationTxInfo,
   isBridgeOrderTxInfo,
   isLifiSwapTxInfo,
+  isChangeThresholdTxInfo,
+  isSwapOwnerTxInfo,
 } from '@/src/utils/transaction-guards'
 import { Transaction } from '@safe-global/store/gateway/AUTO_GENERATED/transactions'
 import { ETxType } from '../types/txType'
@@ -33,6 +35,10 @@ export const getTransactionType = ({ txInfo }: { txInfo: Transaction['txInfo'] }
 
   if (isRemoveSignerTxInfo(txInfo)) {
     return ETxType.REMOVE_SIGNER
+  }
+
+  if (isChangeThresholdTxInfo(txInfo)) {
+    return ETxType.CHANGE_THRESHOLD
   }
 
   if (isCancellationTxInfo(txInfo)) {
@@ -73,6 +79,10 @@ export const getTransactionType = ({ txInfo }: { txInfo: Transaction['txInfo'] }
 
   if (isVaultRedeemTxInfo(txInfo)) {
     return ETxType.VAULT_REDEEM
+  }
+
+  if (isSwapOwnerTxInfo(txInfo)) {
+    return ETxType.SWAP_OWNER
   }
 
   return null

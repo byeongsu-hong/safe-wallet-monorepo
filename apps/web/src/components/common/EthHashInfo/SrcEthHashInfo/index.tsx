@@ -26,13 +26,12 @@ export type EthHashInfoProps = {
   copyPrefix?: boolean
   shortAddress?: boolean
   copyAddress?: boolean
-  customAvatar?: string
+  customAvatar?: string | null
   hasExplorer?: boolean
   avatarSize?: number
   children?: ReactNode
   trusted?: boolean
   ExplorerButtonProps?: ExplorerButtonProps
-  isAddressBookName?: boolean
   addressBookNameSource?: ContactSource
   highlight4bytes?: boolean
 }
@@ -56,7 +55,6 @@ const SrcEthHashInfo = ({
   ExplorerButtonProps,
   children,
   trusted = true,
-  isAddressBookName = false,
   addressBookNameSource,
   highlight4bytes = false,
 }: EthHashInfoProps): ReactElement => {
@@ -106,7 +104,7 @@ const SrcEthHashInfo = ({
               {name}
             </Box>
 
-            {isAddressBookName && (
+            {!!addressBookNameSource && (
               <Tooltip title={`From your ${addressBookNameSource} address book`} placement="top">
                 <span style={{ lineHeight: 0 }}>
                   <SvgIcon
