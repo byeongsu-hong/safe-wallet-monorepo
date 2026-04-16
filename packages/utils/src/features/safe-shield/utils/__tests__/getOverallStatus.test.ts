@@ -4,6 +4,8 @@ import type { RecipientAnalysisResults, ContractAnalysisResults, ThreatAnalysisR
 import { RecipientAnalysisResultBuilder } from '../../builders/recipient-analysis-result.builder'
 import { ContractAnalysisResultBuilder } from '../../builders/contract-analysis-result.builder'
 import { ThreatAnalysisResultBuilder } from '../../builders/threat-analysis-result.builder'
+import { DeadlockAnalysisBuilder } from '../../builders/deadlock-analysis.builder'
+import { DeadlockAnalysisResultBuilder } from '../../builders/deadlock-analysis-result.builder'
 
 describe('getOverallStatus', () => {
   describe('undefined cases', () => {
@@ -15,6 +17,19 @@ describe('getOverallStatus', () => {
     it('should return undefined when both recipient and contract results are undefined', () => {
       const result = getOverallStatus(undefined, undefined)
       expect(result).toBeUndefined()
+    })
+
+    it('should return undefined when only hnLoginRequired is false', () => {
+      const result = getOverallStatus(undefined, undefined, undefined, false, false)
+      expect(result).toBeUndefined()
+    })
+
+    it('should return INFO severity when hnLoginRequired is true with no analysis results', () => {
+      const result = getOverallStatus(undefined, undefined, undefined, false, true)
+
+      expect(result).toBeDefined()
+      expect(result!.severity).toBe(Severity.INFO)
+      expect(result!.title).toBe('Authentication required')
     })
 
     it('should return WARN severity when simulation fails with no analysis results', () => {
@@ -401,6 +416,211 @@ describe('getOverallStatus', () => {
       const result = getOverallStatus(recipientResults, contractResults)
 
       expect(result).toBeUndefined()
+    })
+  })
+
+  describe('deadlock analysis results', () => {
+    it('should return CRITICAL severity for deadlock detected', () => {
+      const [deadlockResults] = DeadlockAnalysisBuilder.deadlockDetected()
+
+      const result = getOverallStatus(undefined, undefined, undefined, false, false, deadlockResults)
+
+      expect(result).toBeDefined()
+      expect(result!.severity).toBe(Severity.CRITICAL)
+      expect(result!.title).toBe('Risk detected')
+    })
+
+    it('should return WARN severity for nested safe warning', () => {
+      const [deadlockResults] = DeadlockAnalysisBuilder.nestedSafeWarning()
+
+      const result = getOverallStatus(undefined, undefined, undefined, false, false, deadlockResults)
+
+      expect(result).toBeDefined()
+      expect(result!.severity).toBe(Severity.WARN)
+      expect(result!.title).toBe('Issues found')
+    })
+
+    it('should prioritize CRITICAL deadlock over OK recipient results', () => {
+      const recipientResults: RecipientAnalysisResults = {
+        '0xRecipient1': {
+          [StatusGroup.ADDRESS_BOOK]: [RecipientAnalysisResultBuilder.knownRecipient().build()],
+        },
+      }
+      const [deadlockResults] = DeadlockAnalysisBuilder.deadlockDetected()
+
+      const result = getOverallStatus(recipientResults, undefined, undefined, false, false, deadlockResults)
+
+      expect(result).toBeDefined()
+      expect(result!.severity).toBe(Severity.CRITICAL)
+      expect(result!.title).toBe('Risk detected')
+    })
+
+    it('should prioritize CRITICAL threat over WARN deadlock', () => {
+      const threatResults = {
+        '0xThreat1': {
+          [StatusGroup.THREAT]: ThreatAnalysisResultBuilder.malicious().build(),
+        },
+      } as unknown as ThreatAnalysisResults
+      const [deadlockResults] = DeadlockAnalysisBuilder.nestedSafeWarning()
+
+      const result = getOverallStatus(undefined, undefined, threatResults, false, false, deadlockResults)
+
+      expect(result).toBeDefined()
+      expect(result!.severity).toBe(Severity.CRITICAL)
+      expect(result!.title).toBe('Risk detected')
+    })
+
+    it('should return CRITICAL when multiple addresses have mixed deadlock severities', () => {
+      const deadlockResults = {
+        '0xSafe1': {
+          DEADLOCK: [DeadlockAnalysisResultBuilder.nestedSafeWarning().build()],
+        },
+        '0xSafe2': {
+          DEADLOCK: [DeadlockAnalysisResultBuilder.deadlockDetected().build()],
+        },
+      }
+
+      const result = getOverallStatus(undefined, undefined, undefined, false, false, deadlockResults)
+
+      expect(result).toBeDefined()
+      expect(result!.severity).toBe(Severity.CRITICAL)
+      expect(result!.title).toBe('Risk detected')
+    })
+
+    it('should return undefined when deadlock results are undefined', () => {
+      const result = getOverallStatus(undefined, undefined, undefined, false, false, undefined)
+
+      expect(result).toBeUndefined()
+    })
+  })
+
+  describe('hnLoginRequired parameter', () => {
+    it('should return INFO severity with Authentication required title when hnLoginRequired is true', () => {
+      const result = getOverallStatus(undefined, undefined, undefined, false, true)
+
+      expect(result).toBeDefined()
+      expect(result!.severity).toBe(Severity.INFO)
+      expect(result!.title).toBe('Authentication required')
+    })
+
+    it('should prioritize CRITICAL severity over hnLoginRequired INFO', () => {
+      const threatResults = {
+        '0xThreat1': {
+          [StatusGroup.THREAT]: ThreatAnalysisResultBuilder.malicious().build(),
+        },
+      } as unknown as ThreatAnalysisResults
+
+      const result = getOverallStatus(undefined, undefined, threatResults, false, true)
+
+      expect(result).toBeDefined()
+      expect(result!.severity).toBe(Severity.CRITICAL)
+      expect(result!.title).toBe('Risk detected')
+    })
+
+    it('should prioritize WARN severity over hnLoginRequired INFO', () => {
+      const recipientResults: RecipientAnalysisResults = {
+        '0xRecipient1': {
+          [StatusGroup.RECIPIENT_ACTIVITY]: [RecipientAnalysisResultBuilder.lowActivity().build()],
+        },
+      }
+
+      const result = getOverallStatus(recipientResults, undefined, undefined, false, true)
+
+      expect(result).toBeDefined()
+      expect(result!.severity).toBe(Severity.WARN)
+      expect(result!.title).toBe('Issues found')
+    })
+
+    it('should prioritize simulation error WARN over hnLoginRequired INFO', () => {
+      const result = getOverallStatus(undefined, undefined, undefined, true, true)
+
+      expect(result).toBeDefined()
+      expect(result!.severity).toBe(Severity.WARN)
+      expect(result!.title).toBe('Issues found')
+    })
+
+    it('should return INFO severity when hnLoginRequired is true and only OK results exist', () => {
+      const recipientResults: RecipientAnalysisResults = {
+        '0xRecipient1': {
+          [StatusGroup.ADDRESS_BOOK]: [RecipientAnalysisResultBuilder.knownRecipient().build()],
+        },
+      }
+
+      const result = getOverallStatus(recipientResults, undefined, undefined, false, true)
+
+      expect(result).toBeDefined()
+      expect(result!.severity).toBe(Severity.INFO)
+      expect(result!.title).toBe('Authentication required')
+    })
+
+    it('should return INFO severity when hnLoginRequired is true and only INFO results exist', () => {
+      const recipientResults: RecipientAnalysisResults = {
+        '0xRecipient1': {
+          [StatusGroup.RECIPIENT_INTERACTION]: [RecipientAnalysisResultBuilder.newRecipient().build()],
+        },
+      }
+
+      const result = getOverallStatus(recipientResults, undefined, undefined, false, true)
+
+      expect(result).toBeDefined()
+      expect(result!.severity).toBe(Severity.INFO)
+      expect(result!.title).toBe('Review details')
+    })
+
+    it('should handle hnLoginRequired with multiple analysis results and prioritize highest severity', () => {
+      const recipientResults: RecipientAnalysisResults = {
+        '0xRecipient1': {
+          [StatusGroup.ADDRESS_BOOK]: [RecipientAnalysisResultBuilder.knownRecipient().build()],
+        },
+      }
+
+      const contractResults: ContractAnalysisResults = {
+        '0xContract1': {
+          name: 'Test Contract',
+          logoUrl: 'https://example.com/logo.png',
+          [StatusGroup.CONTRACT_VERIFICATION]: [ContractAnalysisResultBuilder.unverified().build()],
+        },
+      }
+
+      const result = getOverallStatus(recipientResults, contractResults, undefined, false, true)
+
+      expect(result).toBeDefined()
+      expect(result!.severity).toBe(Severity.INFO)
+      expect(result!.title).toBe('Review details')
+    })
+
+    it('should handle hnLoginRequired with threat results and prioritize CRITICAL', () => {
+      const recipientResults: RecipientAnalysisResults = {
+        '0xRecipient1': {
+          [StatusGroup.ADDRESS_BOOK]: [RecipientAnalysisResultBuilder.knownRecipient().build()],
+        },
+      }
+
+      const threatResults = {
+        '0xThreat1': {
+          [StatusGroup.THREAT]: ThreatAnalysisResultBuilder.malicious().build(),
+        },
+      } as unknown as ThreatAnalysisResults
+
+      const result = getOverallStatus(recipientResults, undefined, threatResults, false, true)
+
+      expect(result).toBeDefined()
+      expect(result!.severity).toBe(Severity.CRITICAL)
+      expect(result!.title).toBe('Risk detected')
+    })
+
+    it('should handle hnLoginRequired with simulation error and threat results', () => {
+      const threatResults = {
+        '0xThreat1': {
+          [StatusGroup.THREAT]: ThreatAnalysisResultBuilder.malicious().build(),
+        },
+      } as unknown as ThreatAnalysisResults
+
+      const result = getOverallStatus(undefined, undefined, threatResults, true, true)
+
+      expect(result).toBeDefined()
+      expect(result!.severity).toBe(Severity.CRITICAL)
+      expect(result!.title).toBe('Risk detected')
     })
   })
 })

@@ -1,5 +1,5 @@
 import { type PropsWithChildren, useContext, useEffect, useMemo } from 'react'
-import useBalances from '@/hooks/useBalances'
+import { useTrustedTokenBalances } from '@/hooks/loadables/useTrustedTokenBalances'
 import { createTokenTransferParams } from '@/services/tx/tokenTransferParams'
 import { createMultiSendCallOnlyTx } from '@/services/tx/tx-sender'
 import type { MultiTokenTransferParams } from '.'
@@ -20,19 +20,17 @@ const ReviewTokenTransfer = ({
   onSubmit: () => void
   txNonce?: number
 }>) => {
-  const { setSafeTx, setSafeTxError, setNonce, setIsMassPayout } = useContext(SafeTxContext)
-  const { balances } = useBalances()
+  const { setSafeTx, setSafeTxError, setNonce } = useContext(SafeTxContext)
+  const [balances] = useTrustedTokenBalances()
 
   const recipients = useMemo(() => params?.recipients || [], [params?.recipients])
-
-  useEffect(() => {
-    setIsMassPayout(recipients.length > 1)
-  }, [recipients, setIsMassPayout])
 
   useEffect(() => {
     if (txNonce !== undefined) {
       setNonce(txNonce)
     }
+
+    if (!balances) return
 
     const calls = recipients
       .map((recipient) => {

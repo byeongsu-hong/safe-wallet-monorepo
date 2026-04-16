@@ -1,13 +1,13 @@
 import { ExpoConfig } from 'expo/config'
- 
+
 const IS_DEV = process.env.APP_VARIANT === 'development'
 
 const appleDevTeamId = '86487MHG6V'
 
 const sslPinningDomains = {
   'safe-client.staging.5afe.dev': [
-    'q4C71761+V3iWTrVYmUj59dTVrOeoD7KYtOrtA74QBs=', // 🍃 Leaf cert (Valid: Oct 23 00:00:00 2025 GMT → Nov 21 23:59:59 2026 GMT)
-    'DxH4tt40L+eduF6szpY6TONlxhZhBd+pJ9wbHlQ2fuw=', // 🔗 Intermediate (Valid: Aug 23 22:21:28 2022 GMT → Aug 23 22:21:28 2030 GMT)
+    'QHATxmJ9BkdBNaheGWDzmef6AvXrsvSm6//NSIir448=', // 🍃 Leaf cert (Valid: Jul 12 00:00:00 2025 GMT → Aug 10 23:59:59 2026 GMT)
+    'G9LNNAql897egYsabashkzUCTEJkWBzgoEtk8X/678c=', // 🔗 Intermediate (Valid: Aug 23 22:25:30 2022 GMT → Aug 23 22:25:30 2030 GMT)
   ],
   'safe-client.safe.global': [
     'VOstDe9L/YZ7RKPPd7iwAMbsAwCqqblfg3l1IqjUvuE=', // 🍃 Leaf cert (Valid: Jul 12 00:00:00 2025 GMT → Aug 10 23:59:59 2026 GMT)
@@ -21,7 +21,7 @@ const config: ExpoConfig = {
   name: name,
   slug: 'safe-mobileapp',
   owner: 'safeglobal',
-  version: '1.0.5',
+  version: '1.0.10',
   extra: {
     storybookEnabled: process.env.STORYBOOK_ENABLED,
     eas: {
@@ -32,7 +32,6 @@ const config: ExpoConfig = {
   icon: './assets/images/icon.png',
   scheme: 'myapp',
   userInterfaceStyle: 'automatic',
-  newArchEnabled: true,
   ios: {
     config: {
       usesNonExemptEncryption: false,
@@ -47,6 +46,23 @@ const config: ExpoConfig = {
       // https://github.com/react-native-share/react-native-share/issues/1669
       NSPhotoLibraryUsageDescription:
         'This permission is required by third party libraries, but not used in the app. If you ever get prompted for it, deny it & contact support.',
+      LSApplicationQueriesSchemes: [
+        'metamask',
+        'rabby',
+        'ledger',
+        'coinbase',
+        'okx',
+        'trust',
+        'tokenpocket',
+        'phantom',
+        'rainbow',
+        'zerion',
+        'frame',
+        'onekey',
+        'bitget',
+        'safepal',
+        'bybit',
+      ],
     },
     supportsTablet: false,
     appleTeamId: appleDevTeamId,
@@ -74,7 +90,6 @@ const config: ExpoConfig = {
       'android.permission.FOREGROUND_SERVICE',
       'android.permission.WAKE_LOCK',
     ],
-    edgeToEdgeEnabled: true,
     allowBackup: false,
   },
   web: {
@@ -83,6 +98,17 @@ const config: ExpoConfig = {
     favicon: './assets/images/favicon.png',
   },
   plugins: [
+    [
+      'expo-datadog',
+      {
+        errorTracking: {
+          iosDsyms: !!process.env.EAS_BUILD,
+          iosSourcemaps: !!process.env.EAS_BUILD,
+          androidSourcemaps: !!process.env.EAS_BUILD,
+          androidProguardMappingFiles: !!process.env.EAS_BUILD,
+        },
+      },
+    ],
     [
       'react-native-ble-plx',
       {
@@ -133,6 +159,7 @@ const config: ExpoConfig = {
           forceStaticLinking: ['RNFBApp'],
         },
         android: {
+          minSdkVersion: 34,
           extraMavenRepos: ['../../../../node_modules/@notifee/react-native/android/libs'],
         },
       },
@@ -148,6 +175,8 @@ const config: ExpoConfig = {
         enableBase64ShareAndroid: true,
       },
     ],
+    '@react-native-community/datetimepicker',
+    'expo-image',
     'expo-task-manager',
     'expo-web-browser',
     [
@@ -171,16 +200,11 @@ const config: ExpoConfig = {
         iosPermissions: ['Bluetooth'],
       },
     ],
+    './queries.js',
   ],
   experiments: {
     typedRoutes: true,
-  },
-  notification: {
-    icon: './assets/images/icon.png',
-    color: '#FFFFFF',
-    androidMode: 'default',
-    androidCollapsedTitle: 'Updates from Safe Wallet',
-    iosDisplayInForeground: true,
+    reactCompiler: true,
   },
 }
 

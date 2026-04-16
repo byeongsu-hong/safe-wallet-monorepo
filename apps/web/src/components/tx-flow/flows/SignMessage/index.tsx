@@ -1,19 +1,32 @@
 import TxLayout from '@/components/tx-flow/common/TxLayout'
 import SignMessage, { type SignMessageProps } from '@/components/tx-flow/flows/SignMessage/SignMessage'
 import { getSwapTitle } from '@/features/swap'
-import { selectSwapParams } from '@/features/swap/store/swapParamsSlice'
+import { selectSwapParams } from '@/features/swap/store'
 import { useAppSelector } from '@/store'
-import { Box, Typography } from '@mui/material'
+import { Box, SvgIcon, Typography } from '@mui/material'
 import SafeAppIconCard from '@/components/safe-apps/SafeAppIconCard'
-import { ErrorBoundary } from '@sentry/react'
+import ObservabilityErrorBoundary from '@/components/common/ObservabilityErrorBoundary'
 import { type BaseTransaction } from '@safe-global/safe-apps-sdk'
 import { SWAP_TITLE } from '@/features/swap/constants'
-import { STAKE_TITLE } from '@/features/stake/constants'
-import { getStakeTitle } from '@/features/stake/helpers/utils'
+import { STAKE_TITLE, getStakeTitle } from '@/features/stake'
+import { EARN_TITLE } from '@/features/earn'
 import { isEIP712TypedData } from '@safe-global/utils/utils/safe-messages'
+import EarnIcon from '@/public/images/common/earn.svg'
+import StakeIcon from '@/public/images/common/stake.svg'
 
 const APP_LOGO_FALLBACK_IMAGE = '/images/apps/apps-icon.svg'
 const APP_NAME_FALLBACK = 'Sign message'
+
+/** Inline SVG to support currentColor in dark mode */
+const InlineIcon = ({ name }: { name: string }) => {
+  if (name === EARN_TITLE) {
+    return <SvgIcon component={EarnIcon} inheritViewBox sx={{ width: 32, height: 32 }} />
+  }
+  if (name === STAKE_TITLE) {
+    return <SvgIcon component={StakeIcon} inheritViewBox sx={{ width: 32, height: 32 }} />
+  }
+  return null
+}
 
 export const AppTitle = ({
   name,
@@ -28,6 +41,7 @@ export const AppTitle = ({
 
   const appName = name || APP_NAME_FALLBACK
   const appLogo = logoUri || APP_LOGO_FALLBACK_IMAGE
+  const useInlineIcon = name === EARN_TITLE || name === STAKE_TITLE
 
   let title = appName
   if (name === SWAP_TITLE) {
@@ -40,7 +54,11 @@ export const AppTitle = ({
 
   return (
     <Box display="flex" alignItems="center">
-      <SafeAppIconCard src={appLogo} alt={name || 'The icon of the application'} width={32} height={32} />
+      {useInlineIcon && name ? (
+        <InlineIcon name={name} />
+      ) : (
+        <SafeAppIconCard src={appLogo} alt={name || 'The icon of the application'} width={32} height={32} />
+      )}
       <Typography variant="h4" pl={2} fontWeight="bold">
         {title}
       </Typography>
@@ -60,9 +78,9 @@ const SignMessageFlow = ({ message, ...props }: SignMessageProps) => {
       isMessage
       hideSafeShield={!isEip712}
     >
-      <ErrorBoundary fallback={<div>Error signing message</div>}>
+      <ObservabilityErrorBoundary fallback={<div>Error signing message</div>}>
         <SignMessage message={message} {...props} />
-      </ErrorBoundary>
+      </ObservabilityErrorBoundary>
     </TxLayout>
   )
 }

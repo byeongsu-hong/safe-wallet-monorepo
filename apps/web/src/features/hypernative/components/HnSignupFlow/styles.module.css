@@ -1,6 +1,6 @@
 .container {
   overflow: hidden;
-  height: 750px;
+  height: 660px;
   max-height: 90vh;
 }
 
@@ -27,6 +27,29 @@
   overflow-y: auto;
 }
 
+.formWrapper {
+  margin: 0 auto;
+  width: 100%;
+  min-height: 620px;
+}
+
+.cancelButtonWrapper {
+  z-index: 1;
+  margin-top: -80px;
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .cancelButtonWrapper {
+    margin-top: -63px;
+  }
+}
+
+.cancelButton {
+  color: var(--color-static-main) !important;
+}
+
 .calendlyColumn {
   display: flex;
   flex-direction: column;
@@ -41,42 +64,42 @@
   width: 100%;
 }
 
-.formWrapper {
-  margin: 0 auto;
-  width: 100%;
-  min-height: 620px;
-}
-
 .calendlyWrapper {
-  margin: 0 auto;
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
-.calendlyContainer {
-  flex: 1;
-  min-height: 0;
+.calendlyWidget {
+  min-width: 310px;
+  height: 700px;
 }
 
-.formTitle {
-  color: var(--color-static-main);
-  margin-bottom: var(--space-2);
+.calendlyWidgetWithHeader {
+  margin-top: var(--space-1);
 }
 
-.formSubtitle {
-  color: var(--color-static-light);
-  margin-bottom: var(--space-4) !important;
+.calendlySkeletonOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding-top: var(--space-12);
+  padding-inline: var(--space-5);
+  z-index: 999;
+  background-color: var(--color-static-primary);
+  pointer-events: none;
 }
 
-.cancelButtonWrapper {
-  z-index: 1;
-  margin-top: -67px;
-}
-
-.cancelButton {
-  color: var(--color-static-main) !important;
+@media (min-width: 920px) {
+  .calendlyWidget {
+    width: 100%;
+    height: 100%;
+    margin-top: 0;
+  }
 }
 
 .header {
@@ -196,4 +219,35 @@
 
 .featureIcon {
   color: var(--color-success-main);
+}
+
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: var(--space-4);
+  padding: var(--space-12) var(--space-6);
+  height: 100%;
+  text-align: center;
+}
+
+.errorTitle {
+  font-weight: 700;
+  font-size: 24px;
+  color: var(--color-static-main);
+  margin-bottom: var(--space-1);
+}
+
+.errorMessage {
+  color: var(--color-text-secondary);
+  max-width: 400px;
+  margin-bottom: var(--space-4) !important;
+}
+
+.reloadButton {
+  background-color: var(--color-static-main);
+  color: var(--color-static-primary);
+  max-width: fit-content;
+  align-self: center;
+  padding-inline: var(--space-2);
 }

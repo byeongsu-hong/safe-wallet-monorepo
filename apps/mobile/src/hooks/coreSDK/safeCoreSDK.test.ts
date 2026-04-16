@@ -6,10 +6,19 @@ import { generateChecksummedAddress, createMockProvider } from '@safe-global/tes
 
 const mockGetSafeSingletonDeployments = jest.fn()
 const mockGetSafeL2SingletonDeployments = jest.fn()
+const mockGetAuxDeployment = jest.fn()
 
 jest.mock('@safe-global/safe-deployments', () => ({
+  getSafeSingletonDeployment: (...args: unknown[]) => mockGetSafeSingletonDeployments(...args),
   getSafeSingletonDeployments: (...args: unknown[]) => mockGetSafeSingletonDeployments(...args),
+  getSafeL2SingletonDeployment: (...args: unknown[]) => mockGetSafeL2SingletonDeployments(...args),
   getSafeL2SingletonDeployments: (...args: unknown[]) => mockGetSafeL2SingletonDeployments(...args),
+  getMultiSendDeployment: (...args: unknown[]) => mockGetAuxDeployment(...args),
+  getMultiSendCallOnlyDeployment: (...args: unknown[]) => mockGetAuxDeployment(...args),
+  getProxyFactoryDeployment: (...args: unknown[]) => mockGetAuxDeployment(...args),
+  getFallbackHandlerDeployment: (...args: unknown[]) => mockGetAuxDeployment(...args),
+  getSignMessageLibDeployment: (...args: unknown[]) => mockGetAuxDeployment(...args),
+  getCreateCallDeployment: (...args: unknown[]) => mockGetAuxDeployment(...args),
 }))
 
 jest.mock('@safe-global/protocol-kit', () => ({
@@ -59,6 +68,10 @@ describe('initSafeSDK', () => {
     mockGetSafeL2SingletonDeployments.mockReturnValue({
       networkAddresses: { [mockChainId]: [mockImplementation] },
     })
+    mockGetAuxDeployment.mockImplementation((filter?: { network?: string }) => ({
+      networkAddresses: { [filter?.network ?? mockChainId]: mockImplementation },
+      defaultAddress: mockImplementation,
+    }))
   })
 
   const createDefaultProps = (overrides?: Partial<SafeCoreSDKProps>): SafeCoreSDKProps => ({
@@ -89,11 +102,13 @@ describe('initSafeSDK', () => {
 
     const result = await initSafeSDK(props)
 
-    expect(Safe.init).toHaveBeenCalledWith({
-      provider: 'https://rpc.example.com',
-      safeAddress: mockAddress,
-      isL1SafeSingleton: true,
-    })
+    expect(Safe.init).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provider: 'https://rpc.example.com',
+        safeAddress: mockAddress,
+        isL1SafeSingleton: true,
+      }),
+    )
     expect(result).toBe(mockSafe)
   })
 

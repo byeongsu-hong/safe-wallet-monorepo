@@ -1,5 +1,5 @@
 import type { TransactionDetails, Transaction } from '@safe-global/store/gateway/AUTO_GENERATED/transactions'
-import useIsExpiredSwap from '@/features/swap/hooks/useIsExpiredSwap'
+import { useIsExpiredSwap } from '@/features/swap'
 import React, { type ReactElement, useEffect, useRef, useState, useMemo } from 'react'
 import { Box, CircularProgress, Typography } from '@mui/material'
 
@@ -25,7 +25,7 @@ import { InfoDetails } from '@/components/transactions/InfoDetails'
 import NamedAddressInfo from '@/components/common/NamedAddressInfo'
 import css from './styles.module.css'
 import ErrorMessage from '@/components/tx/ErrorMessage'
-import { ErrorBoundary } from '@sentry/react'
+import ObservabilityErrorBoundary from '@/components/common/ObservabilityErrorBoundary'
 import ExecuteTxButton from '@/components/transactions/ExecuteTxButton'
 import SignTxButton from '@/components/transactions/SignTxButton'
 import RejectTxButton from '@/components/transactions/RejectTxButton'
@@ -38,13 +38,14 @@ import { useHasFeature } from '@/hooks/useChains'
 import { useTransactionsGetTransactionByIdV1Query } from '@safe-global/store/gateway/AUTO_GENERATED/transactions'
 import { asError } from '@safe-global/utils/services/exceptions/utils'
 import { POLLING_INTERVAL } from '@/config/constants'
-import { TxNote } from '@/features/tx-notes'
+import { TxNotesFeature } from '@/features/tx-notes'
+import { useLoadFeature } from '@/features/__core__'
 import { TxShareBlock, TxExplorerLink } from '../TxShareLink'
 import { FEATURES } from '@safe-global/utils/utils/chains'
 import { sameAddress } from '@safe-global/utils/utils/addresses'
 import DecodedData from './TxData/DecodedData'
 import { QueuedTxSimulation } from '../QueuedTxSimulation'
-import HnSecurityReportBtnForTxDetails from '@/features/hypernative/components/HnSecurityReportBtn'
+import { HypernativeFeature } from '@/features/hypernative'
 
 export const NOT_AVAILABLE = 'n/a'
 
@@ -54,6 +55,8 @@ type TxDetailsProps = {
 }
 
 const TxDetailsBlock = ({ txSummary, txDetails }: TxDetailsProps): ReactElement => {
+  const txNotes = useLoadFeature(TxNotesFeature)
+  const hn = useLoadFeature(HypernativeFeature)
   const isPending = useIsPending(txSummary.id)
   const hasDefaultTokenlist = useHasFeature(FEATURES.DEFAULT_TOKENLIST)
   const isQueue = isTxQueued(txSummary.txStatus)
@@ -103,12 +106,14 @@ const TxDetailsBlock = ({ txSummary, txDetails }: TxDetailsProps): ReactElement 
   const moduleAddress = isModuleExecutionInfo(txSummary.executionInfo) ? txSummary.executionInfo.address : undefined
   const moduleAddressInfo = moduleAddress ? txDetails.txData?.addressInfoIndex?.[moduleAddress.value] : undefined
 
+  const { safe } = useSafeInfo()
+
   return (
     <>
       {/* /Details */}
       <div className={`${css.details} ${isUnsigned ? css.noSigners : ''}`}>
         <div className={css.txNote}>
-          <TxNote txDetails={txDetails} />
+          <txNotes.TxNote txDetails={txDetails} />
         </div>
 
         <div className={css.detailsWrapper}>
@@ -119,7 +124,7 @@ const TxDetailsBlock = ({ txSummary, txDetails }: TxDetailsProps): ReactElement 
           )}
 
           <div className={css.txData}>
-            <ErrorBoundary fallback={<div>Error parsing data</div>}>
+            <ObservabilityErrorBoundary fallback={<div>Error parsing data</div>}>
               <TxData
                 txData={txDetails.txData}
                 txInfo={txDetails.txInfo}
@@ -135,7 +140,7 @@ const TxDetailsBlock = ({ txSummary, txDetails }: TxDetailsProps): ReactElement 
                   />
                 </Box>
               </TxData>
-            </ErrorBoundary>
+            </ObservabilityErrorBoundary>
           </div>
         </div>
 
@@ -157,7 +162,7 @@ const TxDetailsBlock = ({ txSummary, txDetails }: TxDetailsProps): ReactElement 
 
         <div className={css.txSummary}>
           {isUntrusted && !isPending && <UnsignedWarning />}
-          <ErrorBoundary fallback={<div>Error parsing data</div>}>
+          <ObservabilityErrorBoundary fallback={<div>Error parsing data</div>}>
             <Summary
               txDetails={txDetails}
               txData={txDetails.txData}
@@ -165,7 +170,7 @@ const TxDetailsBlock = ({ txSummary, txDetails }: TxDetailsProps): ReactElement 
               showMultisend={false}
               showDecodedData={!isDecodedDataVisible}
             />
-          </ErrorBoundary>
+          </ObservabilityErrorBoundary>
         </div>
 
         {(isMultiSendTxInfo(txDetails.txInfo) ||
@@ -173,9 +178,9 @@ const TxDetailsBlock = ({ txSummary, txDetails }: TxDetailsProps): ReactElement 
           isBridgeOrderTxInfo(txDetails.txInfo) ||
           isLifiSwapTxInfo(txDetails.txInfo)) && (
           <div className={css.multiSend}>
-            <ErrorBoundary fallback={<div>Error parsing data</div>}>
+            <ObservabilityErrorBoundary fallback={<div>Error parsing data</div>}>
               <Multisend txData={txDetails.txData} isExecuted={!!txDetails.executedAt} />
-            </ErrorBoundary>
+            </ObservabilityErrorBoundary>
           </div>
         )}
       </div>
@@ -194,7 +199,7 @@ const TxDetailsBlock = ({ txSummary, txDetails }: TxDetailsProps): ReactElement 
             proposer={proposer}
           />
 
-          {isQueue && <HnSecurityReportBtnForTxDetails txDetails={txDetails} />}
+          {isQueue && <hn.HnSecuritySection txDetails={txDetails} safeTxHash={safeTxHash} chainId={safe.chainId} />}
 
           {txDetails.txHash && <TxExplorerLink txHash={txDetails.txHash} />}
 

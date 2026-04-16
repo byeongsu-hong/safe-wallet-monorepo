@@ -6,12 +6,10 @@ import { useHasFeature } from '@/hooks/useChains'
 import { sameAddress } from '@safe-global/utils/utils/addresses'
 import { Box, Chip, CircularProgress, Grid, SvgIcon, Tooltip, Typography } from '@mui/material'
 import { TokenType } from '@safe-global/store/gateway/types'
-import { ErrorBoundary } from '@sentry/react'
+import ObservabilityErrorBoundary from '@/components/common/ObservabilityErrorBoundary'
 import ArrowOutwardIcon from '@/public/images/transactions/outgoing.svg'
 import ArrowDownwardIcon from '@/public/images/transactions/incoming.svg'
 import InfoIcon from '@/public/images/notifications/info.svg'
-import ExternalLink from '@/components/common/ExternalLink'
-import { REDEFINE_ARTICLE } from '@/config/constants'
 import css from './styles.module.css'
 import { formatAmount } from '@safe-global/utils/utils/formatNumber'
 import { FEATURES } from '@safe-global/utils/utils/chains'
@@ -186,11 +184,7 @@ export const BalanceChanges = () => {
           title={
             <>
               The balance change gives an overview of the implications of a transaction. You can see which assets will
-              be sent and received after the transaction is executed.&nbsp;
-              <ExternalLink href={REDEFINE_ARTICLE} title="Learn more about balance change">
-                Learn more about balance change
-              </ExternalLink>
-              .
+              be sent and received after the transaction is executed.
             </>
           }
           arrow
@@ -210,9 +204,9 @@ export const BalanceChanges = () => {
           </span>
         </Tooltip>
       </Typography>
-      <ErrorBoundary fallback={<div>Error showing balance changes</div>}>
+      <ObservabilityErrorBoundary fallback={<div>Error showing balance changes</div>}>
         <BalanceChangesDisplay />
-      </ErrorBoundary>
+      </ObservabilityErrorBoundary>
     </div>
   )
 }

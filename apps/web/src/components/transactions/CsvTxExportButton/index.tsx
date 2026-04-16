@@ -9,7 +9,7 @@ import { showNotification } from '@/store/notificationsSlice'
 import { OnboardingTooltip } from '@/components/common/OnboardingTooltip'
 import { Chip } from '@/components/common/Chip'
 import { useDarkMode } from '@/hooks/useDarkMode'
-import OnlyOwner from '@/components/common/OnlyOwner'
+import OnlyOwnerOrProposer from '@/components/common/OnlyOwnerOrProposer'
 import { trackEvent } from '@/services/analytics'
 import { TX_LIST_EVENTS } from '@/services/analytics/events/txList'
 
@@ -142,14 +142,13 @@ const CsvTxExportButton = ({ hasActiveFilter }: CsvTxExportProps): ReactElement 
         }
       >
         <div>
-          <OnlyOwner placement="top">
+          <OnlyOwnerOrProposer placement="top">
             {(isOk) => (
               <Button
-                variant="contained"
+                variant="outlined"
                 onClick={onClick}
                 size="small"
-                sx={{ height: 38 }}
-                endIcon={
+                startIcon={
                   exportJobId ? (
                     <CircularProgress size={16} />
                   ) : (
@@ -158,10 +157,10 @@ const CsvTxExportButton = ({ hasActiveFilter }: CsvTxExportProps): ReactElement 
                 }
                 disabled={!isOk || !!exportJobId}
               >
-                {exportJobId ? 'Exporting' : 'Export CSV'}
+                {exportJobId ? 'Exporting' : 'Export'}
               </Button>
             )}
-          </OnlyOwner>
+          </OnlyOwnerOrProposer>
         </div>
       </OnboardingTooltip>
 

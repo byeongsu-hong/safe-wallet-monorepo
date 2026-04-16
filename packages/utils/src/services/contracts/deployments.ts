@@ -1,20 +1,29 @@
 import semverSatisfies from 'semver/functions/satisfies'
 import {
   getSafeSingletonDeployment as getOfficialSafeSingletonDeployment,
+  getSafeSingletonDeployments as getOfficialSafeSingletonDeployments,
   getSafeL2SingletonDeployment as getOfficialSafeL2SingletonDeployment,
+  getSafeL2SingletonDeployments as getOfficialSafeL2SingletonDeployments,
   getMultiSendCallOnlyDeployment as getOfficialMultiSendCallOnlyDeployment,
+  getMultiSendCallOnlyDeployments as getOfficialMultiSendCallOnlyDeployments,
   getMultiSendDeployment as getOfficialMultiSendDeployment,
+  getMultiSendDeployments as getOfficialMultiSendDeployments,
   getFallbackHandlerDeployment as getOfficialFallbackHandlerDeployment,
   getProxyFactoryDeployment as getOfficialProxyFactoryDeployment,
+  getProxyFactoryDeployments as getOfficialProxyFactoryDeployments,
   getSignMessageLibDeployment as getOfficialSignMessageLibDeployment,
+  getSignMessageLibDeployments as getOfficialSignMessageLibDeployments,
   getCreateCallDeployment as getOfficialCreateCallDeployment,
+  getCreateCallDeployments as getOfficialCreateCallDeployments,
   getSafeMigrationDeployment as getOfficialSafeMigrationDeployment,
   getCompatibilityFallbackHandlerDeployment as getOfficialCompatibilityFallbackHandlerDeployment,
   getCompatibilityFallbackHandlerDeployments as getOfficialCompatibilityFallbackHandlerDeployments,
   getSafeToL2SetupDeployment as getOfficialSafeToL2SetupDeployment,
   getSafeToL2MigrationDeployment as getOfficialSafeToL2MigrationDeployment,
+  getSimulateTxAccessorDeployments,
 } from '@safe-global/safe-deployments'
 import type { SingletonDeployment, DeploymentFilter, SingletonDeploymentV2 } from '@safe-global/safe-deployments'
+import type { ContractNetworkConfig } from '@safe-global/protocol-kit'
 import {
   getCustomSafeSingletonDeployment,
   getCustomSafeL2SingletonDeployment,
@@ -37,6 +46,7 @@ import { sameAddress } from '@safe-global/utils/utils/addresses'
 import { type SafeVersion } from '@safe-global/types-kit'
 import { getLatestSafeVersion } from '@safe-global/utils/utils/chains'
 import { SafeState } from '@safe-global/store/gateway/AUTO_GENERATED/safes'
+import { ZKSYNC_ERA_CHAIN_ID } from '@safe-global/utils/config/chains'
 
 const toNetworkAddressList = (addresses: string | string[]) => (Array.isArray(addresses) ? addresses : [addresses])
 
@@ -110,7 +120,62 @@ export const getCompatibilityFallbackHandlerDeployments = (
   return customDeployments ?? getOfficialCompatibilityFallbackHandlerDeployments(filter)
 }
 
-// Bytecode detection for L2 master copies (from upstream)
+const toSingletonDeploymentV2 = (deployment: SingletonDeployment | undefined): SingletonDeploymentV2 | undefined => {
+  if (!deployment) {
+    return undefined
+  }
+
+  if ('deployments' in deployment) {
+    return deployment as SingletonDeploymentV2
+  }
+
+  return Object.assign({}, deployment, {
+    deployments: {
+      canonical: undefined,
+    },
+  }) as SingletonDeploymentV2
+}
+
+export const getSafeSingletonDeployments = (filter?: DeploymentFilter): SingletonDeploymentV2 | undefined => {
+  const customDeployment = getCustomSafeSingletonDeployment(filter)
+  return customDeployment ? toSingletonDeploymentV2(customDeployment) : getOfficialSafeSingletonDeployments(filter)
+}
+
+export const getSafeL2SingletonDeployments = (filter?: DeploymentFilter): SingletonDeploymentV2 | undefined => {
+  const customDeployment = getCustomSafeL2SingletonDeployment(filter)
+  return customDeployment ? toSingletonDeploymentV2(customDeployment) : getOfficialSafeL2SingletonDeployments(filter)
+}
+
+export const getMultiSendCallOnlyDeployments = (filter?: DeploymentFilter): SingletonDeploymentV2 | undefined => {
+  const customDeployment = getCustomMultiSendCallOnlyDeployment(filter)
+  return customDeployment ? toSingletonDeploymentV2(customDeployment) : getOfficialMultiSendCallOnlyDeployments(filter)
+}
+
+export const getMultiSendDeployments = (filter?: DeploymentFilter): SingletonDeploymentV2 | undefined => {
+  const customDeployment = getCustomMultiSendDeployment(filter)
+  return customDeployment ? toSingletonDeploymentV2(customDeployment) : getOfficialMultiSendDeployments(filter)
+}
+
+export const getProxyFactoryDeployments = (filter?: DeploymentFilter): SingletonDeploymentV2 | undefined => {
+  const customDeployment = getCustomProxyFactoryDeployment(filter)
+  return customDeployment ? toSingletonDeploymentV2(customDeployment) : getOfficialProxyFactoryDeployments(filter)
+}
+
+export const getSignMessageLibDeployments = (filter?: DeploymentFilter): SingletonDeploymentV2 | undefined => {
+  const customDeployment = getCustomSignMessageLibDeployment(filter)
+  return customDeployment ? toSingletonDeploymentV2(customDeployment) : getOfficialSignMessageLibDeployments(filter)
+}
+
+export const getCreateCallDeployments = (filter?: DeploymentFilter): SingletonDeploymentV2 | undefined => {
+  const customDeployment = getCustomCreateCallDeployment(filter)
+  return customDeployment ? toSingletonDeploymentV2(customDeployment) : getOfficialCreateCallDeployments(filter)
+}
+
+export const getSafeToL2SetupDeployments = (filter?: DeploymentFilter): SingletonDeploymentV2 | undefined => {
+  return toSingletonDeploymentV2(getSafeToL2SetupDeployment(filter))
+}
+
+type DeploymentType = 'canonical' | 'eip155' | 'zksync'
 type DeploymentRecord = Record<string, { address: string; codeHash: string }>
 
 const SAFE_L2_CODE_HASHES = new Set<string>(
@@ -118,6 +183,8 @@ const SAFE_L2_CODE_HASHES = new Set<string>(
     Object.values(deployment.deployments as DeploymentRecord).map(({ codeHash }) => codeHash.toLowerCase()),
   ),
 )
+
+const SUPPORTED_ZKSYNC_CANONICAL_CHAIN_IDS = new Set([ZKSYNC_ERA_CHAIN_ID])
 
 export const isL2MasterCopyCodeHash = (codeHash: string | undefined): boolean => {
   if (!codeHash) {
@@ -175,6 +242,25 @@ export const getCanonicalOrFirstAddress = (
 
   const addresses = toNetworkAddressList(deployment.networkAddresses[chainId] ?? [])
   return addresses[0]
+}
+
+/**
+ * Returns an address for a deployment, trying per-chain lookup first, then falling back
+ * to the chain-agnostic deployment type address. Works for unregistered chains.
+ */
+export const getChainAgnosticAddress = (
+  deployment: SingletonDeploymentV2 | undefined,
+  chainId: string,
+  deploymentType: DeploymentType = 'canonical',
+): string | undefined => {
+  if (!deployment) return undefined
+
+  // Try per-chain first (works for registered chains)
+  const perChainAddress = getCanonicalOrFirstAddress(deployment, chainId)
+  if (perChainAddress) return perChainAddress
+
+  // Fall back to chain-agnostic address by deployment type
+  return deployment.deployments[deploymentType]?.address
 }
 
 /**
@@ -276,4 +362,146 @@ export const getSignMessageLibContractDeployment = (chain: Chain, safeVersion: S
 
 export const getCreateCallContractDeployment = (chain: Chain, safeVersion: SafeState['version']) => {
   return _tryDeploymentVersions(getCreateCallDeployment, chain, safeVersion)
+}
+
+/**
+ * zkSync Era uses different bytecode formats:
+ * - EVM bytecode (canonical deployments) - standard Solidity compiled
+ * - EraVM bytecode (zkSync-specific deployments) - zksolc compiled
+ *
+ * EVM contracts cannot delegatecall to EraVM contracts, so Safes using canonical
+ * mastercopies must use canonical auxiliary contracts (MultiSend, SignMessageLib, etc.)
+ */
+
+/**
+ * Checks if an implementation address is a canonical (EVM bytecode) Safe deployment on zkSync.
+ * On zkSync, canonical deployments have EVM bytecode while zkSync-specific deployments have EraVM bytecode.
+ */
+export const isCanonicalDeployment = (
+  implementationAddress: string,
+  chainId: string,
+  version: SafeState['version'],
+): boolean => {
+  // Canonical aux-contract override is currently enabled only for zkSync Era mainnet.
+  if (!SUPPORTED_ZKSYNC_CANONICAL_CHAIN_IDS.has(chainId)) {
+    return false
+  }
+
+  const safeVersion = version ?? '1.3.0'
+
+  // Check L2 singleton deployments
+  const l2Deployment = getSafeL2SingletonDeployment({ version: safeVersion, network: chainId })
+  if (l2Deployment?.deployments.canonical?.address) {
+    if (sameAddress(implementationAddress, l2Deployment.deployments.canonical.address)) {
+      return true
+    }
+  }
+
+  // Check L1 singleton deployments
+  const l1Deployment = getSafeSingletonDeployment({ version: safeVersion, network: chainId })
+  if (l1Deployment?.deployments.canonical?.address) {
+    if (sameAddress(implementationAddress, l1Deployment.deployments.canonical.address)) {
+      return true
+    }
+  }
+
+  return false
+}
+
+/**
+ * Gets the canonical MultiSendCallOnly address for a given version.
+ * Used when a Safe on zkSync uses a canonical (EVM bytecode) mastercopy.
+ */
+export const getCanonicalMultiSendCallOnlyAddress = (version: SafeState['version']): string | undefined => {
+  const safeVersion = version ?? '1.3.0'
+  const deployment = getMultiSendCallOnlyDeployments({ version: safeVersion })
+  return deployment?.deployments.canonical?.address
+}
+
+/**
+ * Gets the canonical MultiSend address for a given version.
+ * Used when a Safe on zkSync uses a canonical (EVM bytecode) mastercopy.
+ */
+export const getCanonicalMultiSendAddress = (version: SafeState['version']): string | undefined => {
+  const safeVersion = version ?? '1.3.0'
+  const deployment = getMultiSendDeployments({ version: safeVersion })
+  return deployment?.deployments.canonical?.address
+}
+
+type DeploymentGetter = (filter?: DeploymentFilter) => SingletonDeploymentV2 | undefined
+
+type AuxiliaryContractField = keyof Pick<
+  ContractNetworkConfig,
+  | 'multiSendAddress'
+  | 'multiSendCallOnlyAddress'
+  | 'safeProxyFactoryAddress'
+  | 'fallbackHandlerAddress'
+  | 'signMessageLibAddress'
+  | 'createCallAddress'
+  | 'simulateTxAccessorAddress'
+>
+
+const BASE_DEPLOYMENT_GETTERS: Record<AuxiliaryContractField, DeploymentGetter> = {
+  multiSendAddress: getMultiSendDeployments,
+  multiSendCallOnlyAddress: getMultiSendCallOnlyDeployments,
+  safeProxyFactoryAddress: getProxyFactoryDeployments,
+  fallbackHandlerAddress: getCompatibilityFallbackHandlerDeployments,
+  signMessageLibAddress: getSignMessageLibDeployments,
+  createCallAddress: getCreateCallDeployments,
+  simulateTxAccessorAddress: getSimulateTxAccessorDeployments,
+}
+
+const CHAIN_AGNOSTIC_VERSIONS = '>=1.4.1'
+
+export const isChainAgnosticVersion = (version: string | null | undefined): boolean => {
+  if (!version) return false
+  const [cleanVersion] = version.split('+')
+  return semverSatisfies(cleanVersion, CHAIN_AGNOSTIC_VERSIONS)
+}
+
+/**
+ * Resolves all contract addresses chain-agnostically by version + deployment type.
+ * Works for any chain without needing safe-deployments to register it.
+ *
+ * Returns undefined only if the singleton address cannot be resolved (critical).
+ * Missing auxiliary contracts are logged as warnings and omitted from the result —
+ * the SDK will still init but may fail for operations that need the missing contract.
+ */
+export const resolveChainAgnosticContractAddresses = (
+  version: string,
+  isL2: boolean,
+  isZk: boolean,
+): ContractNetworkConfig | undefined => {
+  const [cleanVersion] = version.split('+')
+  const deploymentType: DeploymentType = isZk ? 'zksync' : 'canonical'
+
+  const singletonGetter: DeploymentGetter = isL2 ? getSafeL2SingletonDeployments : getSafeSingletonDeployments
+
+  // Singleton is critical — cannot proceed without it
+  const singletonAddress = singletonGetter({ version: cleanVersion })?.deployments[deploymentType]?.address
+  if (!singletonAddress) {
+    console.warn(`[resolveChainAgnostic] No singleton address for v${cleanVersion} (${deploymentType}, L2=${isL2})`)
+    return undefined
+  }
+
+  const resolved: Record<string, string> = { safeSingletonAddress: singletonAddress }
+  const missingContracts: string[] = []
+
+  // Resolve auxiliary contracts — missing ones are non-fatal
+  for (const [field, getter] of Object.entries(BASE_DEPLOYMENT_GETTERS)) {
+    const address = getter({ version: cleanVersion })?.deployments[deploymentType]?.address
+    if (address) {
+      resolved[field] = address
+    } else {
+      missingContracts.push(field)
+    }
+  }
+
+  if (missingContracts.length > 0) {
+    console.warn(
+      `[resolveChainAgnostic] Missing auxiliary contracts for v${cleanVersion} (${deploymentType}): ${missingContracts.join(', ')}`,
+    )
+  }
+
+  return resolved as ContractNetworkConfig
 }

@@ -3,10 +3,11 @@ import { mapVisibleAnalysisResults } from '@safe-global/utils/features/safe-shie
 import { getPrimaryAnalysisResult } from '@safe-global/utils/features/safe-shield/utils/getPrimaryAnalysisResult'
 import { isEmpty } from 'lodash'
 import React, { useMemo } from 'react'
-import { Stack } from 'tamagui'
+import { View } from 'tamagui'
 import { AnalysisLabel } from '../AnalysisLabel'
 import { AnalysisDisplay } from './AnalysisDisplay'
 import { DelegateCallItem } from './DelegateCallItem'
+import { FallbackHandlerItem } from './FallbackHandlerItem'
 
 interface AnalysisGroup {
   data: Record<string, GroupedAnalysisResults>
@@ -27,7 +28,7 @@ export const AnalysisGroup = ({ data, highlightedSeverity }: AnalysisGroup) => {
   const isHighlighted = !highlightedSeverity || primarySeverity === highlightedSeverity
 
   return (
-    <Stack gap="$3">
+    <View gap="$3">
       <AnalysisLabel label={primaryResult.title} severity={primarySeverity} highlighted={isHighlighted} />
 
       {visibleResults.map((result, index) => {
@@ -38,6 +39,10 @@ export const AnalysisGroup = ({ data, highlightedSeverity }: AnalysisGroup) => {
           return <DelegateCallItem key={`${result.title}-${index}`} result={result} isPrimary={isPrimary} />
         }
 
+        if (result.type === ContractStatus.UNOFFICIAL_FALLBACK_HANDLER) {
+          return <FallbackHandlerItem key={`${result.title}-${index}`} result={result} isPrimary={isPrimary} />
+        }
+
         return (
           <AnalysisDisplay
             key={`${result.title}-${index}`}
@@ -46,6 +51,6 @@ export const AnalysisGroup = ({ data, highlightedSeverity }: AnalysisGroup) => {
           />
         )
       })}
-    </Stack>
+    </View>
   )
 }

@@ -1,4 +1,10 @@
-import { StatusGroup, type AnalysisResult, type StatusGroupType, CommonSharedStatus } from '../types'
+import {
+  StatusGroup,
+  type AnalysisResult,
+  type StatusGroupType,
+  CommonSharedStatus,
+  type FallbackHandlerAnalysisResult,
+} from '../types'
 import type { ContractAnalysisBuilder } from './contract-analysis.builder'
 
 export const DEFAULT_INFO = {
@@ -6,7 +12,10 @@ export const DEFAULT_INFO = {
   logoUrl: 'https://placehold.co/160',
 }
 export class ContractAddressBuilder {
-  constructor(private parent: ContractAnalysisBuilder, private address: string) {}
+  constructor(
+    private parent: ContractAnalysisBuilder,
+    private address: string,
+  ) {}
 
   addName(name: string): this {
     this.parent['contract'][this.address].name = name
@@ -41,11 +50,21 @@ export class ContractAddressBuilder {
     return this
   }
 
+  fallbackHandler(results: FallbackHandlerAnalysisResult[]): this {
+    if (!this.parent['contract'][this.address]) {
+      this.parent['contract'][this.address] = DEFAULT_INFO
+    }
+    this.parent['contract'][this.address][StatusGroup.FALLBACK_HANDLER] = results
+    return this
+  }
+
   failed(result: AnalysisResult<CommonSharedStatus.FAILED>): this {
     if (!this.parent['contract'][this.address]) {
       this.parent['contract'][this.address] = DEFAULT_INFO
     }
-    this.parent['contract'][this.address][StatusGroup.CONTRACT_VERIFICATION] = [result as any]
+    this.parent['contract'][this.address][StatusGroup.CONTRACT_VERIFICATION] = [
+      result as AnalysisResult<StatusGroupType<StatusGroup.CONTRACT_VERIFICATION>>,
+    ]
     return this
   }
 

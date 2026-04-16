@@ -26,7 +26,7 @@ import {
 import { useHasPendingTxs } from '@/hooks/usePendingTxs'
 import { getSafeTxGas, getNonces } from '@/services/tx/tx-sender/recommendedNonce'
 import useAsync from '@safe-global/utils/hooks/useAsync'
-import { useUpdateBatch } from '@/hooks/useDraftBatch'
+import { useUpdateBatch } from '@/features/batching'
 import { useCurrentChain } from '@/hooks/useChains'
 
 type TxActions = {
@@ -162,7 +162,16 @@ export const useTxActions = (): TxActions => {
         await dispatchTxRelay(safeTx, safe, txId, chain, txOptions.gasLimit)
       } else {
         const isSmartAccount = await isSmartContractWallet(signer.chainId, signer.address)
-        await dispatchTxExecution(safeTx, txOptions, txId, signer.provider, signer.address, safeAddress, isSmartAccount)
+        await dispatchTxExecution(
+          safe.chainId,
+          safeTx,
+          txOptions,
+          txId,
+          signer.provider,
+          signer.address,
+          safeAddress,
+          isSmartAccount,
+        )
       }
 
       return txId

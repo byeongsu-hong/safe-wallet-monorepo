@@ -9,16 +9,15 @@ import React from 'react'
 import PositionsUnavailable from './components/PositionsUnavailable'
 import TotalAssetValue from '@/components/balances/TotalAssetValue'
 import PositionsSkeleton from '@/features/positions/components/PositionsSkeleton'
-import RefreshPositionsButton from '@/features/positions/components/RefreshPositionsButton'
-import { FEATURES } from '@safe-global/utils/utils/chains'
-import { useHasFeature } from '@/hooks/useChains'
+import { PortfolioFeature } from '@/features/portfolio'
+import { useLoadFeature } from '@/features/__core__'
 
-export const Positions = () => {
+const Positions = () => {
   const positionsFiatTotal = usePositionsFiatTotal()
   const { data: protocols, error, isLoading } = usePositions()
-  const isPortfolioEndpointEnabled = useHasFeature(FEATURES.PORTFOLIO_ENDPOINT) ?? false
+  const portfolio = useLoadFeature(PortfolioFeature)
 
-  if (isLoading || (!error && !protocols)) {
+  if (isLoading) {
     return <PositionsSkeleton />
   }
 
@@ -31,16 +30,14 @@ export const Positions = () => {
   return (
     <Stack gap={2}>
       <Box>
-        <Box mb={2}>
-          <TotalAssetValue fiatTotal={positionsFiatTotal} title="Total positions value" />
-        </Box>
+        <TotalAssetValue
+          fiatTotal={positionsFiatTotal}
+          title="Total positions value"
+          action={<portfolio.PortfolioRefreshHint entryPoint="Positions" />}
+        />
 
-        <Box mb={1} mt="-47px" display="flex" justifyContent="flex-end">
-          <RefreshPositionsButton entryPoint="Positions" label="Refresh positions" />
-        </Box>
-
-        {!isPortfolioEndpointEnabled && (
-          <Typography variant="caption" sx={{ color: 'text.secondary' }} mb={1}>
+        {portfolio.$isDisabled && (
+          <Typography variant="caption" sx={{ color: 'text.secondary' }} mt={2}>
             Position balances are not included in the total asset value.
           </Typography>
         )}
@@ -58,7 +55,12 @@ export const Positions = () => {
               </AccordionSummary>
               <AccordionDetails sx={{ pt: 0, pb: 0 }}>
                 {protocol.items.map((group, groupIndex) => (
-                  <PositionGroup key={groupIndex} group={group} isLast={groupIndex === protocol.items.length - 1} />
+                  <PositionGroup
+                    key={groupIndex}
+                    group={group}
+                    isLast={groupIndex === protocol.items.length - 1}
+                    protocolIconUrl={protocol.protocol_metadata.icon.url}
+                  />
                 ))}
               </AccordionDetails>
             </Accordion>

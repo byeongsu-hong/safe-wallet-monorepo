@@ -147,10 +147,14 @@ const queryAddedTransactions = async (
   const topics = await transactionAddedFilter.getTopicFilter()
   topics[1] = queryNonces
 
-  const { blockNumber } = (await _getSafeCreationReceipt({ transactionService, provider, safeAddress }))!
+  const creationReceipt = await _getSafeCreationReceipt({ transactionService, provider, safeAddress })
+
+  if (!creationReceipt) {
+    throw new Error(`Could not fetch creation receipt for Safe ${safeAddress}`)
+  }
 
   // @ts-expect-error
-  return await delayModifier.queryFilter(topics, blockNumber, 'latest')
+  return await delayModifier.queryFilter(topics, creationReceipt.blockNumber, 'latest')
 }
 
 const getRecoveryQueueItem = async ({
@@ -189,11 +193,15 @@ const getRecoveryQueueItem = async ({
     transaction: transactionAdded.args,
   })
 
+  if (!receipt) {
+    throw new Error(`Could not fetch transaction receipt for ${transactionAdded.transactionHash}`)
+  }
+
   return {
     ...transactionAdded,
     ...timestamps,
     isMalicious,
-    executor: receipt!.from,
+    executor: receipt.from,
   }
 }
 

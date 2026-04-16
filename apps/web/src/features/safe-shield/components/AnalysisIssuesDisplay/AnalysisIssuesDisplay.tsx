@@ -12,6 +12,7 @@ import { useState } from 'react'
 
 interface AnalysisIssuesDisplayProps {
   result: AnalysisResult
+  issueBackgroundColor: string
 }
 
 const issueBoxStyles = {
@@ -36,7 +37,7 @@ const addressTypographyStyles = {
   },
 } as const
 
-export const AnalysisIssuesDisplay = ({ result }: AnalysisIssuesDisplayProps) => {
+export const AnalysisIssuesDisplay = ({ result, issueBackgroundColor }: AnalysisIssuesDisplayProps) => {
   const currentChain = useCurrentChain()
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
 
@@ -98,24 +99,8 @@ export const AnalysisIssuesDisplay = ({ result }: AnalysisIssuesDisplayProps) =>
                 </Box>
               )}
 
-              <Box
-                sx={{
-                  bgcolor: issue.address ? 'var(--color-error-background)' : 'transparent',
-                  px: 1,
-                  py: 0.5,
-                  width: '100%',
-                }}
-              >
-                <Typography
-                  variant="body2"
-                  color="text.primary"
-                  fontSize={12}
-                  lineHeight="14px"
-                  sx={{
-                    fontFamily: 'DM Sans, sans-serif',
-                    fontWeight: 400,
-                  }}
-                >
+              <Box bgcolor={issue.address ? issueBackgroundColor : 'transparent'} px={1} py={0.5}>
+                <Typography variant="body2" fontSize={12} lineHeight="14px" color="primary.light">
                   {issue.description}
                 </Typography>
               </Box>

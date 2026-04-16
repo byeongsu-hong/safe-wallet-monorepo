@@ -1,33 +1,18 @@
 import { useMemo } from 'react'
-import { type Balances, useBalancesGetBalancesV1Query } from '@safe-global/store/gateway/AUTO_GENERATED/balances'
-import type { AppBalance } from '@safe-global/store/gateway/AUTO_GENERATED/portfolios'
 import { useAppSelector } from '@/store'
 import { selectCurrency, selectSettings, TOKEN_LISTS } from '@/store/settingsSlice'
 import { useCurrentChain, useHasFeature } from '../useChains'
 import useSafeInfo from '../useSafeInfo'
 import { POLLING_INTERVAL } from '@/config/constants'
-import { useCounterfactualBalances } from '@/features/counterfactual/useCounterfactualBalances'
-import usePortfolioBalances from '@/features/portfolio/hooks/usePortfolioBalances'
+import { useCounterfactualBalances } from '@/features/counterfactual/hooks'
 import { FEATURES, hasFeature } from '@safe-global/utils/utils/chains'
 import type { AsyncResult } from '@safe-global/utils/hooks/useAsync'
+import useTotalBalances from '@safe-global/utils/hooks/useTotalBalances'
+import type { PortfolioBalances } from '@safe-global/utils/hooks/portfolioBalances'
 
-export interface PortfolioBalances extends Balances {
-  positions?: AppBalance[]
-  tokensFiatTotal?: string
-  positionsFiatTotal?: string
-}
-
-export const initialBalancesState: PortfolioBalances = {
-  items: [],
-  fiatTotal: '',
-}
-
-const createPortfolioBalances = (balances: Balances): PortfolioBalances => ({
-  ...balances,
-  tokensFiatTotal: balances.fiatTotal,
-  positionsFiatTotal: '0',
-  positions: undefined,
-})
+// Re-export shared types and helpers for backward compatibility
+export type { PortfolioBalances } from '@safe-global/utils/hooks/portfolioBalances'
+export { initialBalancesState, createPortfolioBalances } from '@safe-global/utils/hooks/portfolioBalances'
 
 export const useTokenListSetting = (): boolean | undefined => {
   const chain = useCurrentChain()
@@ -40,75 +25,41 @@ export const useTokenListSetting = (): boolean | undefined => {
 }
 
 /**
- * Hook to load balances using the legacy endpoint.
- * @param skip - Skip fetching when portfolio endpoint is enabled
- */
-export const useLegacyBalances = (skip = false): AsyncResult<PortfolioBalances> => {
-  const currency = useAppSelector(selectCurrency)
-  const isTrustedTokenList = useTokenListSetting()
-  const { safe, safeAddress } = useSafeInfo()
-  const isReady = safeAddress && safe.deployed && isTrustedTokenList !== undefined
-  const isCounterfactual = !safe.deployed
-
-  const {
-    currentData: legacyBalances,
-    isLoading: legacyLoading,
-    error: legacyError,
-  } = useBalancesGetBalancesV1Query(
-    {
-      chainId: safe.chainId,
-      safeAddress,
-      fiatCode: currency,
-      trusted: isTrustedTokenList,
-    },
-    {
-      skip: skip || !isReady,
-      pollingInterval: POLLING_INTERVAL,
-      skipPollingIfUnfocused: true,
-      refetchOnFocus: true,
-    },
-  )
-
-  const [cfData, cfError, cfLoading] = useCounterfactualBalances(safe)
-
-  return useMemo<AsyncResult<PortfolioBalances>>(() => {
-    if (skip) {
-      return [undefined, undefined, false]
-    }
-
-    if (isCounterfactual && cfData) {
-      return [createPortfolioBalances(cfData), cfError, cfLoading]
-    }
-
-    if (legacyBalances) {
-      const error = legacyError ? new Error(String(legacyError)) : undefined
-      return [createPortfolioBalances(legacyBalances), error, legacyLoading]
-    }
-
-    const error = legacyError ? new Error(String(legacyError)) : undefined
-    return [undefined, error, true]
-  }, [skip, isCounterfactual, cfData, cfError, cfLoading, legacyBalances, legacyError, legacyLoading])
-}
-
-/**
  * Hook to load token balances and positions data.
- * Uses portfolio endpoint when enabled, otherwise falls back to legacy endpoint.
- * Falls back to legacy endpoint when "All tokens" is selected to show tokens that Zerion may not support.
- * Returns `loading: true` when initialized, even if the query is skipped (e.g., no Safe selected).
+ *
+ * Thin wrapper around the shared useTotalBalances hook, providing
+ * web-specific values (safe info, currency, token list settings, counterfactual handling).
+ *
+ * Behavior:
+ * - fiatTotal: always from portfolio endpoint (Zerion) when available
+ * - Token list: portfolio tokens for "Default tokens", Transaction Service tokens for "All tokens"
+ * - tokensFiatTotal: calculated from the displayed token list
+ * - positions: always from portfolio endpoint when available
  */
 const useLoadBalances = (): AsyncResult<PortfolioBalances> => {
   const settings = useAppSelector(selectSettings)
   const hasPortfolioFeature = useHasFeature(FEATURES.PORTFOLIO_ENDPOINT) ?? false
   const isAllTokensSelected = settings.tokenList === TOKEN_LISTS.ALL
+  const isTrustedTokenList = useTokenListSetting()
+  const { safe, safeAddress } = useSafeInfo()
+  const currency = useAppSelector(selectCurrency)
+  const counterfactualResult = useCounterfactualBalances(safe)
 
-  // Use legacy balances when portfolio feature is disabled OR when "All tokens" is selected
-  // This ensures users can see tokens that Zerion may not support via the legacy endpoint
-  const shouldUsePortfolioEndpoint = hasPortfolioFeature && !isAllTokensSelected
+  const { data, error, loading } = useTotalBalances({
+    safeAddress,
+    chainId: safe.chainId,
+    currency,
+    trusted: isTrustedTokenList,
+    hasPortfolioFeature,
+    isAllTokensSelected,
+    isDeployed: safe.deployed,
+    counterfactualResult,
+    txServicePollingInterval: POLLING_INTERVAL,
+    skipPollingIfUnfocused: true,
+    refetchOnFocus: true,
+  })
 
-  const legacyResult = useLegacyBalances(shouldUsePortfolioEndpoint)
-  const portfolioResult = usePortfolioBalances(!shouldUsePortfolioEndpoint)
-
-  return shouldUsePortfolioEndpoint ? portfolioResult : legacyResult
+  return [data, error, loading]
 }
 
 export default useLoadBalances

@@ -13,6 +13,9 @@ export type SafeTxContextParams = {
   safeMessage?: TypedData
   setSafeMessage: Dispatch<SetStateAction<TypedData | undefined>>
 
+  safeMessageHash?: `0x${string}`
+  setSafeMessageHash: Dispatch<SetStateAction<`0x${string}` | undefined>>
+
   safeTxError?: Error
   setSafeTxError: Dispatch<SetStateAction<Error | undefined>>
 
@@ -30,34 +33,29 @@ export type SafeTxContextParams = {
   setTxOrigin: Dispatch<SetStateAction<string | undefined>>
 
   isReadOnly: boolean
-  setIsReadOnly: Dispatch<SetStateAction<boolean>>
-  isMassPayout?: boolean
-  setIsMassPayout: Dispatch<SetStateAction<boolean | undefined>>
 }
 
 export const SafeTxContext = createContext<SafeTxContextParams>({
   setSafeTx: () => {},
   setSafeMessage: () => {},
+  setSafeMessageHash: () => {},
   setSafeTxError: () => {},
   setNonce: () => {},
   setNonceNeeded: () => {},
   setSafeTxGas: () => {},
   setTxOrigin: () => {},
   isReadOnly: false,
-  setIsReadOnly: () => {},
-  setIsMassPayout: () => {},
 })
 
 const SafeTxProvider = ({ children }: { children: ReactNode }): ReactElement => {
   const [safeTx, setSafeTx] = useState<SafeTransaction>()
   const [safeMessage, setSafeMessage] = useState<TypedData>()
+  const [safeMessageHash, setSafeMessageHash] = useState<`0x${string}`>()
   const [safeTxError, setSafeTxError] = useState<Error>()
   const [nonce, setNonce] = useState<number>()
   const [nonceNeeded, setNonceNeeded] = useState<boolean>(true)
   const [safeTxGas, setSafeTxGas] = useState<string>()
   const [txOrigin, setTxOrigin] = useState<string>()
-  const [isReadOnly, setIsReadOnly] = useState<boolean>(false)
-  const [isMassPayout, setIsMassPayout] = useState<boolean>()
 
   // Signed txs cannot be updated
   const isSigned = Boolean(safeTx && safeTx.signatures.size > 0)
@@ -66,7 +64,8 @@ const SafeTxProvider = ({ children }: { children: ReactNode }): ReactElement => 
   const recommendedNonce = useRecommendedNonce()
   const recommendedSafeTxGas = useSafeTxGas(safeTx)
 
-  const canEdit = !isSigned && !isReadOnly
+  const canEdit = !isSigned
+  const isReadOnly = !canEdit
 
   // Priority to external nonce, then to the recommended one
   const finalNonce = canEdit ? (nonce ?? recommendedNonce ?? safeTx?.data.nonce) : safeTx?.data.nonce
@@ -76,7 +75,8 @@ const SafeTxProvider = ({ children }: { children: ReactNode }): ReactElement => 
 
   // Update the tx when the nonce or safeTxGas change
   useEffect(() => {
-    if (!canEdit || !safeTx?.data) return
+    if (!canEdit) return
+    if (!safeTx?.data) return
     if (safeTx.data.nonce === finalNonce && safeTx.data.safeTxGas === finalSafeTxGas) return
 
     setSafeTxError(undefined)
@@ -102,6 +102,8 @@ const SafeTxProvider = ({ children }: { children: ReactNode }): ReactElement => 
         setSafeTxError,
         safeMessage,
         setSafeMessage,
+        safeMessageHash,
+        setSafeMessageHash,
         nonce: finalNonce,
         setNonce,
         nonceNeeded,
@@ -112,9 +114,6 @@ const SafeTxProvider = ({ children }: { children: ReactNode }): ReactElement => 
         txOrigin,
         setTxOrigin,
         isReadOnly,
-        setIsReadOnly,
-        isMassPayout,
-        setIsMassPayout,
       }}
     >
       {children}

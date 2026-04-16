@@ -1,16 +1,28 @@
 import merge from 'lodash/merge'
-import type { ContractAnalysisResults, RecipientAnalysisResults, ThreatAnalysisResults } from '../types'
+import type {
+  ContractAnalysisResults,
+  DeadlockAnalysisResults,
+  RecipientAnalysisResults,
+  ThreatAnalysisResults,
+} from '../types'
 import { ContractAnalysisBuilder } from './contract-analysis.builder'
+import { DeadlockAnalysisBuilder } from './deadlock-analysis.builder'
 import { RecipientAnalysisBuilder } from './recipient-analysis.builder'
 import { ThreatAnalysisBuilder } from './threat-analysis.builder'
 import type { AsyncResult } from '@safe-global/utils/hooks/useAsync'
 
 export class FullAnalysisBuilder {
   private response: {
-    recipient?: AsyncResult<RecipientAnalysisResults>
-    contract?: AsyncResult<ContractAnalysisResults>
-    threat?: AsyncResult<ThreatAnalysisResults>
-  } = {}
+    recipient: AsyncResult<RecipientAnalysisResults>
+    contract: AsyncResult<ContractAnalysisResults>
+    threat: AsyncResult<ThreatAnalysisResults>
+    deadlock: AsyncResult<DeadlockAnalysisResults>
+  } = {
+    recipient: [undefined, undefined, false],
+    contract: [undefined, undefined, false],
+    threat: [undefined, undefined, false],
+    deadlock: [undefined, undefined, false],
+  }
 
   recipient(recipientAnalysis: AsyncResult<RecipientAnalysisResults>): this {
     const [recipientResult = {}, error, loading = false] = recipientAnalysis || []
@@ -37,6 +49,28 @@ export class FullAnalysisBuilder {
   threat(threatAnalysis: AsyncResult<ThreatAnalysisResults> | undefined): this {
     const [threatResult, error, loading = false] = threatAnalysis || []
     this.response.threat = [threatResult, error, loading]
+    return this
+  }
+
+  customCheck(threatAnalysis: AsyncResult<ThreatAnalysisResults>): this {
+    const [threatResult = {}, error, loading = false] = threatAnalysis
+    const [currentThreatResult = {}, currentError, currentLoading = false] = this.response.threat || []
+    this.response.threat = [
+      merge(currentThreatResult, { CUSTOM_CHECKS: threatResult.CUSTOM_CHECKS }),
+      currentError || error,
+      currentLoading || loading,
+    ]
+    return this
+  }
+
+  deadlock(deadlockAnalysis: AsyncResult<DeadlockAnalysisResults>): this {
+    const [deadlockResult = {}, error, loading = false] = deadlockAnalysis
+    const [currentDeadlockResult = {}, currentError, currentLoading = false] = this.response.deadlock || []
+    this.response.deadlock = [
+      merge(currentDeadlockResult, deadlockResult),
+      currentError || error,
+      currentLoading || loading,
+    ]
     return this
   }
 
@@ -99,5 +133,27 @@ export class FullAnalysisBuilder {
 
   static failedContract(): FullAnalysisBuilder {
     return new FullAnalysisBuilder().contract(ContractAnalysisBuilder.failedContract().build())
+  }
+
+  static customChecksPassed(): FullAnalysisBuilder {
+    return new FullAnalysisBuilder().threat(ThreatAnalysisBuilder.customChecksPassed())
+  }
+
+  static customCheckFailed(): FullAnalysisBuilder {
+    return new FullAnalysisBuilder().threat(ThreatAnalysisBuilder.customCheckFailed())
+  }
+
+  static unofficialFallbackHandlerContract(address?: string): FullAnalysisBuilder {
+    return new FullAnalysisBuilder().contract(
+      ContractAnalysisBuilder.unofficialFallbackHandlerContract(address).build(),
+    )
+  }
+
+  static deadlockDetected(): FullAnalysisBuilder {
+    return new FullAnalysisBuilder().deadlock(DeadlockAnalysisBuilder.deadlockDetected())
+  }
+
+  static nestedSafeWarning(): FullAnalysisBuilder {
+    return new FullAnalysisBuilder().deadlock(DeadlockAnalysisBuilder.nestedSafeWarning())
   }
 }

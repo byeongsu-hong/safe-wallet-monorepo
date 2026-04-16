@@ -5,7 +5,17 @@ import {
   ListenerEffectAPI,
   TypedStartListening,
 } from '@reduxjs/toolkit'
-import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist'
+import {
+  persistStore,
+  persistReducer,
+  createTransform,
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+} from 'redux-persist'
 import { reduxStorage } from './storage'
 import txHistory from './txHistorySlice'
 import activeSafe from './activeSafeSlice'
@@ -24,14 +34,16 @@ import pendingTxs from './pendingTxsSlice'
 import estimatedFee from './estimatedFeeSlice'
 import executionMethod from './executionMethodSlice'
 import { cgwClient, setBaseUrl } from '@safe-global/store/gateway/cgwClient'
+import { hypernativeApi } from '@safe-global/store/hypernative/hypernativeApi'
 import devToolsEnhancer from 'redux-devtools-expo-dev-plugin'
-import { GATEWAY_URL, isTestingEnv } from '../config/constants'
+import { GATEWAY_URL, isTestingEnv, CONFIG_SERVICE_KEY } from '../config/constants'
 import { web3API } from './signersBalance'
 import { createFilter } from '@safe-global/store/utils/persistTransformFilter'
 import { setupMobileCookieHandling } from './utils/cookieHandling'
 import notificationsMiddleware from './middleware/notifications'
 import analyticsMiddleware from './middleware/analytics'
 import notificationSyncMiddleware from './middleware/notificationSync'
+import { migrate } from './migrations'
 import { setBackendStore } from '@/src/store/utils/singletonStore'
 import pendingTxsListeners from '@/src/store/middleware/pendingTxs'
 import signingState from './signingStateSlice'
@@ -45,8 +57,36 @@ setupMobileCookieHandling()
 
 export const cgwClientFilter = createFilter(
   cgwClient.reducerPath,
-  ['queries.getChainsConfig(undefined)', 'config'],
-  ['queries.getChainsConfig(undefined)', 'config'],
+  [`queries.getChainsConfigV2("${CONFIG_SERVICE_KEY}")`, 'config'],
+  [`queries.getChainsConfigV2("${CONFIG_SERVICE_KEY}")`, 'config'],
+)
+
+type QueryEntry = { status?: string } | undefined
+type RtkQueryState = {
+  queries?: Record<string, QueryEntry>
+  [key: string]: unknown
+}
+
+// RTK Query persists status: 'pending' for in-flight requests. If the app is killed mid-request,
+// this stale pending status prevents new requests from being initiated on restart.
+export const sanitizePendingQueriesTransform = createTransform<RtkQueryState, RtkQueryState>(
+  (inboundState) => inboundState,
+  (outboundState) => {
+    if (!outboundState?.queries) {
+      return outboundState
+    }
+
+    const sanitizedQueries: Record<string, QueryEntry> = {}
+    for (const [key, query] of Object.entries(outboundState.queries)) {
+      if (query?.status === 'pending') {
+        continue
+      }
+      sanitizedQueries[key] = query
+    }
+
+    return { ...outboundState, queries: sanitizedQueries }
+  },
+  { whitelist: [cgwClient.reducerPath] },
 )
 
 export const persistBlacklist = [
@@ -59,14 +99,15 @@ export const persistBlacklist = [
   'executingState',
 ]
 
-export const persistTransforms = [cgwClientFilter]
+export const persistTransforms = [cgwClientFilter, sanitizePendingQueriesTransform]
 
 const persistConfig = {
   key: 'root',
-  version: 1,
+  version: 3,
   storage: reduxStorage,
   blacklist: persistBlacklist,
   transforms: persistTransforms,
+  migrate,
 }
 
 export const rootReducer = combineReducers({
@@ -91,6 +132,7 @@ export const rootReducer = combineReducers({
   executingState,
   [web3API.reducerPath]: web3API.reducer,
   [cgwClient.reducerPath]: cgwClient.reducer,
+  [hypernativeApi.reducerPath]: hypernativeApi.reducer,
 })
 
 // Define the type for the root reducer
@@ -129,6 +171,7 @@ export const makeStore = () =>
       }).concat(
         cgwClient.middleware,
         web3API.middleware,
+        hypernativeApi.middleware,
         notificationsMiddleware,
         analyticsMiddleware,
         notificationSyncMiddleware,

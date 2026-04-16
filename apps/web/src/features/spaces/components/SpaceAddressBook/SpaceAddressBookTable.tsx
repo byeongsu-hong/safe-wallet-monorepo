@@ -3,10 +3,10 @@ import EthHashInfo from '@/components/common/EthHashInfo'
 import tableCss from '@/components/common/EnhancedTable/styles.module.css'
 import Identicon from '@/components/common/Identicon'
 import { Box, Chip, Stack, Tooltip } from '@mui/material'
-import NetworkLogosList from '@/features/multichain/components/NetworkLogosList'
+import { NetworkLogosList } from '@/features/multichain'
 import ChainIndicator from '@/components/common/ChainIndicator'
 import type { SpaceAddressBookItemDto } from '@safe-global/store/gateway/AUTO_GENERATED/spaces'
-import SpaceAddressBookActions from '@/features/spaces/components/SpaceAddressBook/SpaceAddressBookActions'
+import SpaceAddressBookActions from './SpaceAddressBookActions'
 import { ContactSource } from '@/hooks/useAllAddressBooks'
 import useChains from '@/hooks/useChains'
 
@@ -31,18 +31,20 @@ function SpaceAddressBookTable({ entries }: SpaceAddressBookTableProps) {
         content: (
           <Stack direction="row" spacing={1} alignItems="center">
             <Identicon address={entry.address} size={32} />
-            <Stack direction="column" spacing={0.5}>
-              <EthHashInfo
-                showAvatar={false}
-                address={entry.address}
-                name={entry.name}
-                shortAddress={false}
-                showPrefix={false}
-                addressBookNameSource={ContactSource.space}
-                hasExplorer
-                showCopyButton
-              />
-            </Stack>
+            <Box sx={{ '& .ethHashInfo-name': { fontWeight: 700 } }}>
+              <Stack direction="column" spacing={0.5}>
+                <EthHashInfo
+                  showAvatar={false}
+                  address={entry.address}
+                  name={entry.name}
+                  shortAddress={false}
+                  showPrefix={false}
+                  addressBookNameSource={ContactSource.space}
+                  hasExplorer
+                  showCopyButton
+                />
+              </Stack>
+            </Box>
           </Stack>
         ),
       },

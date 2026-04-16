@@ -1,8 +1,13 @@
 import { Box, Typography } from '@mui/material'
-import css from '@/features/spaces/components/Dashboard/styles.module.css'
-import SignInButton from '@/features/spaces/components/SignInButton'
+import css from '../Dashboard/styles.module.css'
+import SignInButton from '../SignInButton'
 
-const SignedOutState = () => {
+interface SignedOutStateProps {
+  afterSignIn?: () => void
+  redirectLoading?: boolean
+}
+
+const SignedOutState = ({ afterSignIn, redirectLoading = false }: SignedOutStateProps) => {
   return (
     <Box className={css.content}>
       <Box textAlign="center" className={css.contentWrapper}>
@@ -16,7 +21,7 @@ const SignedOutState = () => {
             in to continue.
           </Typography>
 
-          <SignInButton />
+          <SignInButton afterSignIn={afterSignIn ?? (() => {})} redirectLoading={redirectLoading} />
         </Box>
       </Box>
     </Box>

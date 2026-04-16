@@ -17,9 +17,13 @@ import { isLegacyVersion } from '@safe-global/utils/services/contracts/utils'
 import { isValidMasterCopy } from '@safe-global/utils/services/contracts/safeContracts'
 import type { SafeCoreSDKProps } from '@safe-global/utils/hooks/coreSDK/types'
 import { isInDeployments } from '@safe-global/utils/hooks/coreSDK/utils'
+import {
+  isChainAgnosticVersion,
+  resolveChainAgnosticContractAddresses,
+} from '@safe-global/utils/services/contracts/deployments'
 
 const singletonSafeSDK = new Map<string, Safe>()
-// Safe Core SDK
+
 export const initSafeSDK = async ({
   provider,
   chainId,
@@ -27,6 +31,8 @@ export const initSafeSDK = async ({
   version,
   implementationVersionState,
   implementation,
+  isL2Chain,
+  isZkChain,
 }: SafeCoreSDKProps): Promise<Safe | undefined> => {
   const providerUrl = provider._getConnection().url
   const key = `${chainId}-${address}-${version}-${implementationVersionState}-${implementation}-${providerUrl}`
@@ -42,63 +48,81 @@ export const initSafeSDK = async ({
 
   const safeVersion = version ?? (await Gnosis_safe__factory.connect(address, provider).VERSION())
   let isL1SafeSingleton = chainId === chains.eth
+  let contractNetworks: ContractNetworksConfig | undefined
 
-  // If it is an official deployment we should still initiate the safeSDK
+  // For versions >= 1.4.1, resolve all addresses chain-agnostically (works on any chain)
+  if (isChainAgnosticVersion(safeVersion) && isL2Chain !== undefined) {
+    const resolved = resolveChainAgnosticContractAddresses(safeVersion, isL2Chain, isZkChain ?? false)
+
+    if (resolved) {
+      contractNetworks = { [chainId]: resolved }
+      isL1SafeSingleton = !isL2Chain
+    }
+  }
+
+  // For older versions or unrecognized master copies, use per-chain lookup
   if (!isValidMasterCopy(implementationVersionState)) {
     const masterCopy = implementation
 
     const safeL1Deployment = getSafeSingletonDeployment({ network: chainId, version: safeVersion })
     const safeL2Deployment = getSafeL2SingletonDeployment({ network: chainId, version: safeVersion })
 
-    isL1SafeSingleton = isInDeployments(masterCopy, safeL1Deployment?.networkAddresses[chainId])
+    const isL1Deployment = isInDeployments(masterCopy, safeL1Deployment?.networkAddresses[chainId])
     const isL2SafeMasterCopy = isInDeployments(masterCopy, safeL2Deployment?.networkAddresses[chainId])
 
-    // Unknown deployment, which we do not want to support
-    if (!isL1SafeSingleton && !isL2SafeMasterCopy) {
-      return Promise.resolve(undefined)
+    if (isL1Deployment) {
+      isL1SafeSingleton = true
+    } else if (isL2SafeMasterCopy) {
+      isL1SafeSingleton = false
+    } else if (!contractNetworks) {
+      // Unknown deployment and no chain-agnostic resolution available
+      return undefined
     }
   }
-  // Legacy Safe contracts
+
   if (isLegacyVersion(safeVersion)) {
     isL1SafeSingleton = true
   }
 
   // Build contract networks configuration for custom deployments
-  const contractNetworks: ContractNetworksConfig = {}
+  // Only build if we haven't already set contractNetworks from chain-agnostic resolution
+  if (!contractNetworks) {
+    const deploymentFilter = { network: chainId, version: safeVersion }
 
-  const deploymentFilter = { network: chainId, version: safeVersion }
+    // Get all relevant deployments for this network and version
+    const safeDeployment = isL1SafeSingleton
+      ? getSafeSingletonDeployment(deploymentFilter)
+      : getSafeL2SingletonDeployment(deploymentFilter)
 
-  // Get all relevant deployments for this network and version
-  const safeDeployment = isL1SafeSingleton
-    ? getSafeSingletonDeployment(deploymentFilter)
-    : getSafeL2SingletonDeployment(deploymentFilter)
+    const deployments = {
+      safe: safeDeployment,
+      multiSend: getMultiSendDeployment(deploymentFilter),
+      multiSendCallOnly: getMultiSendCallOnlyDeployment(deploymentFilter),
+      proxyFactory: getProxyFactoryDeployment(deploymentFilter),
+      fallbackHandler: getFallbackHandlerDeployment(deploymentFilter),
+      signMessageLib: getSignMessageLibDeployment(deploymentFilter),
+      createCall: getCreateCallDeployment(deploymentFilter),
+    }
 
-  const deployments = {
-    safe: safeDeployment,
-    multiSend: getMultiSendDeployment(deploymentFilter),
-    multiSendCallOnly: getMultiSendCallOnlyDeployment(deploymentFilter),
-    proxyFactory: getProxyFactoryDeployment(deploymentFilter),
-    fallbackHandler: getFallbackHandlerDeployment(deploymentFilter),
-    signMessageLib: getSignMessageLibDeployment(deploymentFilter),
-    createCall: getCreateCallDeployment(deploymentFilter),
-  }
+    // Helper function to get contract address for network
+    const getContractAddress = (deployment: typeof deployments.safe) =>
+      deployment?.networkAddresses[chainId] || deployment?.defaultAddress
 
-  // Helper function to get contract address for network
-  const getContractAddress = (deployment: typeof deployments.safe) =>
-    deployment?.networkAddresses[chainId] || deployment?.defaultAddress
+    // Add to contractNetworks if any custom deployments exist for this network
+    const hasCustomDeployments = Object.values(deployments).some((deployment) => deployment?.networkAddresses[chainId])
 
-  // Add to contractNetworks if any custom deployments exist for this network
-  const hasCustomDeployments = Object.values(deployments).some((deployment) => deployment?.networkAddresses[chainId])
-
-  if (hasCustomDeployments) {
-    contractNetworks[chainId] = {
-      safeSingletonAddress: getContractAddress(deployments.safe),
-      safeProxyFactoryAddress: getContractAddress(deployments.proxyFactory),
-      multiSendAddress: getContractAddress(deployments.multiSend),
-      multiSendCallOnlyAddress: getContractAddress(deployments.multiSendCallOnly),
-      fallbackHandlerAddress: getContractAddress(deployments.fallbackHandler),
-      signMessageLibAddress: getContractAddress(deployments.signMessageLib),
-      createCallAddress: getContractAddress(deployments.createCall),
+    if (hasCustomDeployments) {
+      contractNetworks = {
+        [chainId]: {
+          safeSingletonAddress: getContractAddress(deployments.safe),
+          safeProxyFactoryAddress: getContractAddress(deployments.proxyFactory),
+          multiSendAddress: getContractAddress(deployments.multiSend),
+          multiSendCallOnlyAddress: getContractAddress(deployments.multiSendCallOnly),
+          fallbackHandlerAddress: getContractAddress(deployments.fallbackHandler),
+          signMessageLibAddress: getContractAddress(deployments.signMessageLib),
+          createCallAddress: getContractAddress(deployments.createCall),
+        },
+      }
     }
   }
 
@@ -106,7 +130,7 @@ export const initSafeSDK = async ({
     provider: providerUrl,
     safeAddress: address,
     isL1SafeSingleton,
-    contractNetworks,
+    ...(contractNetworks ? { contractNetworks } : {}),
   })
   singletonSafeSDK.set(key, safeSDK)
 

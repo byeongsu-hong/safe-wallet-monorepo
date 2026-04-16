@@ -141,11 +141,13 @@ describe('safeCoreSDK', () => {
           implementationVersionState: ImplementationVersionState.UP_TO_DATE,
         })
 
-        expect(Safe.init).toHaveBeenCalledWith({
-          isL1SafeSingleton: true,
-          provider: expect.anything(),
-          safeAddress: expect.anything(),
-        })
+        expect(Safe.init).toHaveBeenCalledWith(
+          expect.objectContaining({
+            isL1SafeSingleton: true,
+            provider: expect.anything(),
+            safeAddress: expect.anything(),
+          }),
+        )
       })
 
       it('should return an L2 SDK instance for L2 chain', async () => {
@@ -164,11 +166,13 @@ describe('safeCoreSDK', () => {
           implementationVersionState: ImplementationVersionState.UP_TO_DATE,
         })
 
-        expect(Safe.init).toHaveBeenCalledWith({
-          isL1SafeSingleton: false,
-          provider: expect.anything(),
-          safeAddress: expect.anything(),
-        })
+        expect(Safe.init).toHaveBeenCalledWith(
+          expect.objectContaining({
+            isL1SafeSingleton: false,
+            provider: expect.anything(),
+            safeAddress: expect.anything(),
+          }),
+        )
       })
 
       it('should return an L1 SDK instance for legacy Safes, regardless of chain', async () => {
@@ -187,11 +191,13 @@ describe('safeCoreSDK', () => {
           implementationVersionState: ImplementationVersionState.OUTDATED,
         })
 
-        expect(Safe.init).toHaveBeenCalledWith({
-          isL1SafeSingleton: true,
-          provider: expect.anything(),
-          safeAddress: expect.anything(),
-        })
+        expect(Safe.init).toHaveBeenCalledWith(
+          expect.objectContaining({
+            isL1SafeSingleton: true,
+            provider: expect.anything(),
+            safeAddress: expect.anything(),
+          }),
+        )
       })
 
       it('should return an L1 SDK instance for a canonical mastercopy on optimism', async () => {
@@ -210,11 +216,13 @@ describe('safeCoreSDK', () => {
           implementationVersionState: ImplementationVersionState.UNKNOWN,
         })
 
-        expect(Safe.init).toHaveBeenCalledWith({
-          isL1SafeSingleton: true,
-          provider: expect.anything(),
-          safeAddress: expect.anything(),
-        })
+        expect(Safe.init).toHaveBeenCalledWith(
+          expect.objectContaining({
+            isL1SafeSingleton: true,
+            provider: expect.anything(),
+            safeAddress: expect.anything(),
+          }),
+        )
       })
     })
 
@@ -253,11 +261,13 @@ describe('safeCoreSDK', () => {
           implementationVersionState: ImplementationVersionState.UNKNOWN,
         })
 
-        expect(Safe.init).toHaveBeenCalledWith({
-          isL1SafeSingleton: true,
-          provider: expect.anything(),
-          safeAddress: expect.anything(),
-        })
+        expect(Safe.init).toHaveBeenCalledWith(
+          expect.objectContaining({
+            isL1SafeSingleton: true,
+            provider: expect.anything(),
+            safeAddress: expect.anything(),
+          }),
+        )
       })
 
       it('should return undefined for unsupported mastercopies', async () => {

@@ -1,4 +1,5 @@
 import type { Preview } from '@storybook/react'
+import { useColorScheme } from 'react-native'
 import { NavigationContainer, NavigationIndependentTree } from '@react-navigation/native'
 import { StorybookThemeProvider } from '@/src/theme/provider/storybookTheme'
 import { SafeToastProvider } from '@/src/theme/provider/toastProvider'
@@ -14,6 +15,7 @@ import { web3API } from '@/src/store/signersBalance'
 import { TOKEN_LISTS } from '@/src/store/settingsSlice'
 import { chainsAdapter } from '@safe-global/store/gateway/chains'
 import { mockChain } from '@/src/tests/mocks'
+import { CONFIG_SERVICE_KEY } from '@/src/config/constants'
 
 const navigationRef = createNavigationContainerRef()
 
@@ -53,7 +55,7 @@ const createStorybookStore = () => {
       },
       [cgwClient.reducerPath]: {
         queries: {
-          'getChainsConfig(undefined)': {
+          [`getChainsConfigV2("${CONFIG_SERVICE_KEY}")`]: {
             status: 'fulfilled',
             data: mockChainsState,
           },
@@ -92,15 +94,33 @@ const preview: Preview = {
       },
     },
   },
+  globalTypes: {
+    theme: {
+      description: 'Global theme for components',
+      defaultValue: '',
+      toolbar: {
+        title: 'Theme',
+        icon: 'circlehollow',
+        items: [
+          { value: 'light', icon: 'circlehollow', title: 'Light' },
+          { value: 'dark', icon: 'circle', title: 'Dark' },
+        ],
+        dynamicTitle: true,
+      },
+    },
+  },
   tags: ['autodocs'],
   decorators: [
-    (Story) => {
+    (Story, context) => {
+      const colorScheme = useColorScheme()
+      const theme = context.globals.theme || colorScheme || 'light'
+
       return (
         <Provider store={storybookStore}>
           <PortalProvider shouldAddRootHost>
             <NavigationWrapper>
               <SafeAreaProvider>
-                <StorybookThemeProvider>
+                <StorybookThemeProvider theme={theme}>
                   <SafeToastProvider>
                     <View style={{ padding: 16, flex: 1 }} backgroundColor={'$background'}>
                       <Story />

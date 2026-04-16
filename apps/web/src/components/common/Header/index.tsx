@@ -4,40 +4,35 @@ import type { Dispatch, SetStateAction } from 'react'
 import { type ReactElement } from 'react'
 import { useRouter } from 'next/router'
 import type { Url } from 'next/dist/shared/lib/router/router'
-import { IconButton, Paper } from '@mui/material'
+import { Box, IconButton, Paper } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
 import classnames from 'classnames'
 import css from './styles.module.css'
 import ConnectWallet from '@/components/common/ConnectWallet'
 import NetworkSelector from '@/components/common/NetworkSelector'
-import SafeTokenWidget from '@/components/common/SafeTokenWidget'
 import NotificationCenter from '@/components/notification-center/NotificationCenter'
+import SafenetStakingWidget from '@/components/common/SafenetStakingWidget'
 import { AppRoutes } from '@/config/routes'
 import SafeLabsLogo from '@/public/images/logo-safe-labs.svg'
 import SafeLogoMobile from '@/public/images/logo-no-text.svg'
 import Link from 'next/link'
 import useSafeAddress from '@/hooks/useSafeAddress'
-import BatchIndicator from '@/components/batch/BatchIndicator'
-import WalletConnect from '@/features/walletconnect/components'
-import { useHasFeature } from '@/hooks/useChains'
+import { useLoadFeature } from '@/features/__core__'
+import { BatchingFeature } from '@/features/batching'
+import { WalletConnectFeature } from '@/features/walletconnect'
 import Track from '@/components/common/Track'
 import { OVERVIEW_EVENTS, OVERVIEW_LABELS } from '@/services/analytics'
-import { useSafeTokenEnabled } from '@/hooks/useSafeTokenEnabled'
 import { useIsOfficialHost } from '@/hooks/useIsOfficialHost'
+import { useSafeTokenEnabled } from '@/hooks/useSafeTokenEnabled'
 import { BRAND_LOGO, BRAND_NAME } from '@/config/constants'
-import { FEATURES } from '@safe-global/utils/utils/chains'
 
 type HeaderProps = {
   onMenuToggle?: Dispatch<SetStateAction<boolean>>
   onBatchToggle?: Dispatch<SetStateAction<boolean>>
 }
 
-export function getLogoLink(router: ReturnType<typeof useRouter>): Url {
-  return router.pathname === AppRoutes.home || !router.query.safe
-    ? router.pathname === AppRoutes.welcome.accounts
-      ? AppRoutes.welcome.index
-      : AppRoutes.welcome.accounts
-    : { pathname: AppRoutes.home, query: { safe: router.query.safe } }
+export function getLogoLink(): Url {
+  return AppRoutes.welcome.accounts
 }
 
 const Header = ({ onMenuToggle, onBatchToggle }: HeaderProps): ReactElement => {
@@ -46,11 +41,11 @@ const Header = ({ onMenuToggle, onBatchToggle }: HeaderProps): ReactElement => {
   const isProposer = useIsWalletProposer()
   const isSafeOwner = useIsSafeOwner()
   const router = useRouter()
-  const enableWc = useHasFeature(FEATURES.NATIVE_WALLETCONNECT)
+  const { BatchIndicator } = useLoadFeature(BatchingFeature)
+  const { WalletConnectWidget } = useLoadFeature(WalletConnectFeature)
   const isOfficialHost = useIsOfficialHost()
 
-  // If on the home page, the logo should link to the Accounts or Welcome page, otherwise to the home page
-  const logoHref = getLogoLink(router)
+  const logoHref = getLogoLink()
 
   const handleMenuToggle = () => {
     if (onMenuToggle) {
@@ -92,25 +87,25 @@ const Header = ({ onMenuToggle, onBatchToggle }: HeaderProps): ReactElement => {
 
       {showSafeToken && (
         <div className={classnames(css.element, css.hideMobile)}>
-          <SafeTokenWidget />
+          <SafenetStakingWidget />
         </div>
       )}
 
-      <div data-testid="notifications-center" className={css.element}>
-        <NotificationCenter />
-      </div>
+      <Box className={css.rightSideGroup}>
+        <div data-testid="notifications-center" className={css.element}>
+          <NotificationCenter />
+        </div>
 
-      {showBatchButton && (
+        {showBatchButton && (
+          <div className={classnames(css.element, css.hideMobile)}>
+            <BatchIndicator onClick={handleBatchToggle} />
+          </div>
+        )}
+
         <div className={classnames(css.element, css.hideMobile)}>
-          <BatchIndicator onClick={handleBatchToggle} />
+          <WalletConnectWidget />
         </div>
-      )}
-
-      {enableWc && (
-        <div className={classnames(css.element, css.hideMobile)}>
-          <WalletConnect />
-        </div>
-      )}
+      </Box>
 
       <div className={classnames(css.element, css.connectWallet)}>
         <Track label={OVERVIEW_LABELS.top_bar} {...OVERVIEW_EVENTS.OPEN_ONBOARD}>
@@ -120,7 +115,7 @@ const Header = ({ onMenuToggle, onBatchToggle }: HeaderProps): ReactElement => {
 
       {safeAddress && (
         <div className={classnames(css.element, css.networkSelector)}>
-          <NetworkSelector offerSafeCreation />
+          <NetworkSelector offerSafeCreation compactButton={true} />
         </div>
       )}
     </Paper>

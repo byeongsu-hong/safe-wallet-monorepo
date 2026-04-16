@@ -6,6 +6,9 @@ import type { PortfolioBalances } from './loadables/useLoadBalances'
 import { useAppSelector } from '@/store'
 import { selectHideDust } from '@/store/settingsSlice'
 import { DUST_THRESHOLD } from '@/config/constants'
+import useSafeInfo from './useSafeInfo'
+import { useNativeTokenDisplay } from './useNativeTokenDisplay'
+import { TokenType } from '@safe-global/store/gateway/types'
 
 const PRECISION = 18
 
@@ -74,13 +77,21 @@ export const useVisibleBalances = (): {
   loading: boolean
   error?: string
 } => {
+  const { safe } = useSafeInfo()
   const data = useBalances()
   const hiddenTokens = useHiddenTokens()
-  const hideDust = useAppSelector(selectHideDust)
+  // Disable dust filtering for counterfactual safes
+  const hideDust = useAppSelector(selectHideDust) && safe.deployed
+  const { showNativeInBalances } = useNativeTokenDisplay()
 
   return useMemo(() => {
-    const itemsWithoutHidden = filterHiddenTokens(data.balances.items, hiddenTokens)
-    const visibleItems = filterDustTokens(itemsWithoutHidden, hideDust)
+    let items = filterHiddenTokens(data.balances.items, hiddenTokens)
+
+    if (!showNativeInBalances) {
+      items = items.filter((item) => item.tokenInfo.type !== TokenType.NATIVE_TOKEN)
+    }
+
+    const visibleItems = filterDustTokens(items, hideDust)
 
     return {
       ...data,
@@ -94,5 +105,5 @@ export const useVisibleBalances = (): {
         positionsFiatTotal: data.balances.positionsFiatTotal,
       },
     }
-  }, [data, hiddenTokens, hideDust])
+  }, [data, hiddenTokens, hideDust, showNativeInBalances])
 }

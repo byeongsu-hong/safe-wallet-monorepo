@@ -17,11 +17,9 @@ import mapProps from '@/utils/mad-props'
 import Link from 'next/link'
 import { AppRoutes } from '@/config/routes'
 import MUILink from '@mui/material/Link'
-import { useCurrentSpaceId } from '@/features/spaces/hooks/useCurrentSpaceId'
+import { useCurrentSpaceId, useIsAdmin, useIsQualifiedSafe } from '@/features/spaces'
 import { isAuthenticated } from '@/store/authSlice'
 import { useSpacesGetOneV1Query } from '@safe-global/store/gateway/AUTO_GENERATED/spaces'
-import { useIsAdmin } from '@/features/spaces/hooks/useSpaceMembers'
-import useIsQualifiedSafe from '@/features/spaces/hooks/useIsQualifiedSafe'
 
 const HeaderButton = ({
   icon,
@@ -37,7 +35,7 @@ const HeaderButton = ({
   const svg = <SvgIcon component={icon} inheritViewBox fontSize="small" />
 
   return (
-    <Button onClick={onClick} disabled={disabled} variant="text" color="primary" size="small" startIcon={svg}>
+    <Button onClick={onClick} disabled={disabled} variant="outlined" color="primary" size="small" startIcon={svg}>
       {children}
     </Button>
   )
@@ -82,8 +80,6 @@ function AddressBookHeader({
 
   return (
     <PageHeader
-      title="Address book"
-      noBorder
       action={
         <Grid
           container
@@ -119,11 +115,13 @@ function AddressBookHeader({
             item
             xs={12}
             md={7}
+            xl={7.5}
             sx={{
               display: 'flex',
               justifyContent: ['space-between', , 'flex-end'],
-              alignItems: 'center',
+              alignItems: 'flex-end',
             }}
+            gap={{ md: 1, xs: 0.25 }}
           >
             <Track {...ADDRESS_BOOK_EVENTS.IMPORT_BUTTON}>
               <HeaderButton onClick={handleOpenModal(ModalType.IMPORT)} icon={ImportIcon}>
@@ -139,7 +137,7 @@ function AddressBookHeader({
 
             <Track {...ADDRESS_BOOK_EVENTS.CREATE_ENTRY}>
               <HeaderButton onClick={handleOpenModal(ModalType.ENTRY)} icon={AddCircleIcon}>
-                Create entry
+                New entry
               </HeaderButton>
             </Track>
           </Grid>

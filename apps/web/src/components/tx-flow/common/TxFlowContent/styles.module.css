@@ -86,6 +86,10 @@
   margin-left: var(--space-2);
 }
 
+.sidebarSlot {
+  margin-bottom: var(--space-2);
+}
+
 .sticky {
   display: flex;
   flex-direction: column;

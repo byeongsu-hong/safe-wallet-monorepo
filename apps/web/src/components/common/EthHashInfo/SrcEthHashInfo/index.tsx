@@ -34,6 +34,7 @@ export type EthHashInfoProps = {
   ExplorerButtonProps?: ExplorerButtonProps
   addressBookNameSource?: ContactSource
   highlight4bytes?: boolean
+  badgeTooltip?: ReactNode
 }
 
 const stopPropagation = (e: SyntheticEvent) => e.stopPropagation()
@@ -57,12 +58,22 @@ const SrcEthHashInfo = ({
   trusted = true,
   addressBookNameSource,
   highlight4bytes = false,
+  badgeTooltip,
 }: EthHashInfoProps): ReactElement => {
   const shouldPrefix = isAddress(address)
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const identicon = <Identicon address={address} size={avatarSize} />
   const shouldCopyPrefix = shouldPrefix && copyPrefix
+
+  const accountStylesWithBadge = badgeTooltip
+    ? {
+        backgroundColor: 'var(--color-background-main)',
+        fontWeight: 'bold',
+        borderRadius: '16px',
+        padding: name ? '2px 8px 2px 6px' : undefined,
+      }
+    : undefined
 
   const highlightedAddress = highlight4bytes ? (
     <>
@@ -98,25 +109,40 @@ const SrcEthHashInfo = ({
       )}
 
       <Box overflow="hidden" className={onlyName ? css.inline : undefined} gap={0.5}>
-        {name && (
-          <Box title={name} className="ethHashInfo-name" display="flex" alignItems="center" gap={0.5}>
+        {!!name ? (
+          <Box
+            title={name}
+            className="ethHashInfo-name"
+            display="flex"
+            alignItems="center"
+            gap={0.5}
+            sx={accountStylesWithBadge}
+          >
             <Box overflow="hidden" textOverflow="ellipsis">
               {name}
             </Box>
 
-            {!!addressBookNameSource && (
-              <Tooltip title={`From your ${addressBookNameSource} address book`} placement="top">
-                <span style={{ lineHeight: 0 }}>
-                  <SvgIcon
-                    component={addressBookNameSource === ContactSource.local ? AddressBookIcon : CloudOutlinedIcon}
-                    inheritViewBox
-                    color="border"
-                    fontSize="small"
-                  />
-                </span>
-              </Tooltip>
-            )}
+            {badgeTooltip
+              ? badgeTooltip
+              : !!addressBookNameSource && (
+                  <Tooltip title={`From your ${addressBookNameSource} address book`} placement="top">
+                    <span style={{ lineHeight: 0 }}>
+                      <SvgIcon
+                        component={addressBookNameSource === ContactSource.local ? AddressBookIcon : CloudOutlinedIcon}
+                        inheritViewBox
+                        color="border"
+                        fontSize="small"
+                      />
+                    </span>
+                  </Tooltip>
+                )}
           </Box>
+        ) : (
+          badgeTooltip && (
+            <Box display="flex" alignItems="center" gap={0.5}>
+              {badgeTooltip}
+            </Box>
+          )
         )}
 
         <div className={classnames(css.addressContainer, { [css.inline]: onlyName })}>
