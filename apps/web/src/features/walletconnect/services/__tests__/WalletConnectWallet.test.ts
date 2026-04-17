@@ -48,6 +48,7 @@ describe('WalletConnectWallet', () => {
   let wallet: WalletConnectWallet
 
   beforeEach(async () => {
+    jest.clearAllMocks()
     wallet = new WalletConnectWallet()
 
     await wallet.init()

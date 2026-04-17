@@ -32,11 +32,21 @@ export const SAFE_COMPATIBLE_METHODS = [
 
 export const SAFE_COMPATIBLE_EVENTS = ['chainChanged', 'accountsChanged']
 
-export const SAFE_WALLET_METADATA = {
-  name: BRAND_NAME,
-  url: 'https://app.safe.global',
-  description: 'Smart contract wallet for Ethereum',
-  icons: ['https://app.safe.global/images/logo-round.svg'],
+const DEFAULT_SAFE_WALLET_URL = 'https://app.safe.global'
+
+const getSafeWalletOrigin = (): string => {
+  return globalThis.location?.origin || DEFAULT_SAFE_WALLET_URL
+}
+
+export const getSafeWalletMetadata = () => {
+  const origin = getSafeWalletOrigin()
+
+  return {
+    name: BRAND_NAME,
+    url: origin,
+    description: 'Smart contract wallet for Ethereum',
+    icons: [`${origin}/images/logo-round.svg`],
+  }
 }
 
 export const EIP155 = 'eip155' as const
