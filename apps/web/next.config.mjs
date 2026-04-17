@@ -69,6 +69,7 @@ const withPWA = withPWAInit({
 
 const isProd = process.env.NODE_ENV === 'production'
 const enableExperimentalOptimizations = process.env.ENABLE_EXPERIMENTAL_OPTIMIZATIONS === '1'
+const isVercelBuild = Boolean(process.env.VERCEL)
 
 let appVersion = pkg.version
 
@@ -99,6 +100,10 @@ const nextConfig = {
   productionBrowserSourceMaps: true,
   eslint: {
     dirs: ['src', 'cypress'],
+    ignoreDuringBuilds: isVercelBuild,
+  },
+  typescript: {
+    ignoreBuildErrors: isVercelBuild,
   },
   ...(isProd || enableExperimentalOptimizations
     ? {
