@@ -4,6 +4,7 @@ import semverSatisfies from 'semver/functions/satisfies'
 import { type SafeState, cgwApi as safesApi } from '@safe-global/store/gateway/AUTO_GENERATED/safes'
 import { cgwApi as relayApi } from '@safe-global/store/gateway/AUTO_GENERATED/relay'
 import { type Chain } from '@safe-global/store/gateway/AUTO_GENERATED/chains'
+import type { DeploymentFilter, SingletonDeploymentV2 } from '@safe-global/safe-deployments'
 import { getStoreInstance } from '@/store'
 import { getReadOnlyProxyFactoryContract } from '@/services/contracts/safeContracts'
 import type { UrlObject } from 'url'
@@ -48,6 +49,14 @@ export type SafeCreationProps = {
   owners: string[]
   threshold: number
   saltNonce: number
+}
+
+const getDeploymentsForChain = (
+  getDeployments: (filter?: DeploymentFilter) => SingletonDeploymentV2 | undefined,
+  filter: DeploymentFilter,
+  chainId: string,
+): SingletonDeploymentV2 | undefined => {
+  return getDeployments({ ...filter, network: chainId }) ?? getDeployments(filter)
 }
 
 /**
@@ -258,23 +267,39 @@ export const createNewUndeployedSafeWithoutSalt = (
   // Resolve contract addresses (per-chain for registered chains, chain-agnostic fallback for new chains)
   const deploymentType = chain.zk ? 'zksync' : 'canonical'
 
-  const fallbackHandlerDeployments = getCompatibilityFallbackHandlerDeployments({ version: safeVersion })
+  const fallbackHandlerDeployments = getDeploymentsForChain(
+    getCompatibilityFallbackHandlerDeployments,
+    { version: safeVersion },
+    chain.chainId,
+  )
   const fallbackHandlerAddress = getChainAgnosticAddress(fallbackHandlerDeployments, chain.chainId, deploymentType)
 
-  const safeL2Deployments = getSafeL2SingletonDeployments({ version: safeVersion })
+  const safeL2Deployments = getDeploymentsForChain(
+    getSafeL2SingletonDeployments,
+    { version: safeVersion },
+    chain.chainId,
+  )
   const safeL2Address = getChainAgnosticAddress(safeL2Deployments, chain.chainId, deploymentType)
 
-  const safeL1Deployments = getSafeSingletonDeployments({ version: safeVersion })
+  const safeL1Deployments = getDeploymentsForChain(getSafeSingletonDeployments, { version: safeVersion }, chain.chainId)
   const safeL1Address = getChainAgnosticAddress(safeL1Deployments, chain.chainId, deploymentType)
 
-  const safeFactoryDeployments = getProxyFactoryDeployments({ version: safeVersion })
+  const safeFactoryDeployments = getDeploymentsForChain(
+    getProxyFactoryDeployments,
+    { version: safeVersion },
+    chain.chainId,
+  )
   const safeFactoryAddress = getChainAgnosticAddress(safeFactoryDeployments, chain.chainId, deploymentType)
 
   if (!safeL2Address || !safeL1Address || !safeFactoryAddress || !fallbackHandlerAddress) {
     throw new Error('No Safe deployment found')
   }
 
-  const safeToL2SetupDeployments = getSafeToL2SetupDeployments({ version: '1.4.1' })
+  const safeToL2SetupDeployments = getDeploymentsForChain(
+    getSafeToL2SetupDeployments,
+    { version: '1.4.1' },
+    chain.chainId,
+  )
   const safeToL2SetupAddress = getChainAgnosticAddress(safeToL2SetupDeployments, chain.chainId, deploymentType)
   const safeToL2SetupInterface = Safe_to_l2_setup__factory.createInterface()
 

@@ -3,7 +3,9 @@ import { getCompatibilityFallbackHandlerDeployments } from '@/utils/deployments'
 import { useCompatibilityFallbackHandlerDeployments } from '../useCompatibilityFallbackHandlerDeployments'
 import useSafeInfo from '@/hooks/useSafeInfo'
 
-jest.mock('@safe-global/safe-deployments')
+jest.mock('@/utils/deployments', () => ({
+  getCompatibilityFallbackHandlerDeployments: jest.fn(),
+}))
 jest.mock('@/hooks/useSafeInfo')
 
 describe('useCompatibilityFallbackHandlerDeployments', () => {

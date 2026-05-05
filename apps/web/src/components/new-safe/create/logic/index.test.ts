@@ -265,6 +265,32 @@ describe('create/logic', () => {
       })
     })
 
+    it('should use custom Mitosis deployments without canonical metadata', () => {
+      const safeSetup = {
+        owners: [faker.finance.ethereumAddress()],
+        threshold: 1,
+      }
+
+      expect(
+        createNewUndeployedSafeWithoutSalt(
+          '1.3.0',
+          safeSetup,
+          chainBuilder().with({ chainId: '124816' }).with({ l2: true }).build(),
+        ),
+      ).toEqual({
+        safeAccountConfig: {
+          ...safeSetup,
+          fallbackHandler: '0xf48f2B2d2a534e402487b3ee7C18c33Aec0Fe5e4',
+          to: ZERO_ADDRESS,
+          data: EMPTY_DATA,
+          paymentReceiver: ECOSYSTEM_ID_ADDRESS,
+        },
+        safeVersion: '1.3.0',
+        masterCopy: '0x3E5c63644E683549055b9Be8653de26E0B4CD36E',
+        factoryAddress: '0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2',
+      })
+    })
+
     it('should use l1 masterCopy and migration on l2s with multichain feature', () => {
       const safeSetup = {
         owners: [faker.finance.ethereumAddress()],

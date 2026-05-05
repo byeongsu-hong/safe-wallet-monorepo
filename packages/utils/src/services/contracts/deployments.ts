@@ -48,7 +48,13 @@ import { getLatestSafeVersion } from '@safe-global/utils/utils/chains'
 import { SafeState } from '@safe-global/store/gateway/AUTO_GENERATED/safes'
 import { ZKSYNC_ERA_CHAIN_ID } from '@safe-global/utils/config/chains'
 
-const toNetworkAddressList = (addresses: string | string[]) => (Array.isArray(addresses) ? addresses : [addresses])
+const toNetworkAddressList = (addresses: string | string[] | undefined) => {
+  if (!addresses) {
+    return []
+  }
+
+  return Array.isArray(addresses) ? addresses : [addresses]
+}
 
 // Enhanced deployment getters that check custom deployments first, then fallback to official
 export const getSafeSingletonDeployment = (filter?: DeploymentFilter): SingletonDeployment | undefined => {
@@ -116,7 +122,7 @@ export const getSafeToL2MigrationDeployment = (filter?: DeploymentFilter): Singl
 export const getCompatibilityFallbackHandlerDeployments = (
   filter?: DeploymentFilter,
 ): SingletonDeploymentV2 | undefined => {
-  const customDeployments = getCustomCompatibilityFallbackHandlerDeployments(filter)
+  const customDeployments = filter?.network ? getCustomCompatibilityFallbackHandlerDeployments(filter) : undefined
   return customDeployments ?? getOfficialCompatibilityFallbackHandlerDeployments(filter)
 }
 
@@ -137,42 +143,43 @@ const toSingletonDeploymentV2 = (deployment: SingletonDeployment | undefined): S
 }
 
 export const getSafeSingletonDeployments = (filter?: DeploymentFilter): SingletonDeploymentV2 | undefined => {
-  const customDeployment = getCustomSafeSingletonDeployment(filter)
+  const customDeployment = filter?.network ? getCustomSafeSingletonDeployment(filter) : undefined
   return customDeployment ? toSingletonDeploymentV2(customDeployment) : getOfficialSafeSingletonDeployments(filter)
 }
 
 export const getSafeL2SingletonDeployments = (filter?: DeploymentFilter): SingletonDeploymentV2 | undefined => {
-  const customDeployment = getCustomSafeL2SingletonDeployment(filter)
+  const customDeployment = filter?.network ? getCustomSafeL2SingletonDeployment(filter) : undefined
   return customDeployment ? toSingletonDeploymentV2(customDeployment) : getOfficialSafeL2SingletonDeployments(filter)
 }
 
 export const getMultiSendCallOnlyDeployments = (filter?: DeploymentFilter): SingletonDeploymentV2 | undefined => {
-  const customDeployment = getCustomMultiSendCallOnlyDeployment(filter)
+  const customDeployment = filter?.network ? getCustomMultiSendCallOnlyDeployment(filter) : undefined
   return customDeployment ? toSingletonDeploymentV2(customDeployment) : getOfficialMultiSendCallOnlyDeployments(filter)
 }
 
 export const getMultiSendDeployments = (filter?: DeploymentFilter): SingletonDeploymentV2 | undefined => {
-  const customDeployment = getCustomMultiSendDeployment(filter)
+  const customDeployment = filter?.network ? getCustomMultiSendDeployment(filter) : undefined
   return customDeployment ? toSingletonDeploymentV2(customDeployment) : getOfficialMultiSendDeployments(filter)
 }
 
 export const getProxyFactoryDeployments = (filter?: DeploymentFilter): SingletonDeploymentV2 | undefined => {
-  const customDeployment = getCustomProxyFactoryDeployment(filter)
+  const customDeployment = filter?.network ? getCustomProxyFactoryDeployment(filter) : undefined
   return customDeployment ? toSingletonDeploymentV2(customDeployment) : getOfficialProxyFactoryDeployments(filter)
 }
 
 export const getSignMessageLibDeployments = (filter?: DeploymentFilter): SingletonDeploymentV2 | undefined => {
-  const customDeployment = getCustomSignMessageLibDeployment(filter)
+  const customDeployment = filter?.network ? getCustomSignMessageLibDeployment(filter) : undefined
   return customDeployment ? toSingletonDeploymentV2(customDeployment) : getOfficialSignMessageLibDeployments(filter)
 }
 
 export const getCreateCallDeployments = (filter?: DeploymentFilter): SingletonDeploymentV2 | undefined => {
-  const customDeployment = getCustomCreateCallDeployment(filter)
+  const customDeployment = filter?.network ? getCustomCreateCallDeployment(filter) : undefined
   return customDeployment ? toSingletonDeploymentV2(customDeployment) : getOfficialCreateCallDeployments(filter)
 }
 
 export const getSafeToL2SetupDeployments = (filter?: DeploymentFilter): SingletonDeploymentV2 | undefined => {
-  return toSingletonDeploymentV2(getSafeToL2SetupDeployment(filter))
+  const deployment = filter?.network ? getSafeToL2SetupDeployment(filter) : getOfficialSafeToL2SetupDeployment(filter)
+  return toSingletonDeploymentV2(deployment)
 }
 
 type DeploymentType = 'canonical' | 'eip155' | 'zksync'
@@ -215,7 +222,7 @@ export const getL2MasterCopyVersionByCodeHash = (codeHash: string | undefined): 
 }
 
 export const hasCanonicalDeployment = (deployment: SingletonDeploymentV2 | undefined, chainId: string) => {
-  const canonicalAddress = deployment?.deployments.canonical?.address
+  const canonicalAddress = deployment?.deployments?.canonical?.address
 
   if (!canonicalAddress) {
     return false
@@ -237,7 +244,7 @@ export const getCanonicalOrFirstAddress = (
   if (!deployment) return undefined
 
   if (hasCanonicalDeployment(deployment, chainId)) {
-    return deployment.deployments.canonical?.address
+    return deployment.deployments?.canonical?.address
   }
 
   const addresses = toNetworkAddressList(deployment.networkAddresses[chainId] ?? [])
@@ -260,7 +267,7 @@ export const getChainAgnosticAddress = (
   if (perChainAddress) return perChainAddress
 
   // Fall back to chain-agnostic address by deployment type
-  return deployment.deployments[deploymentType]?.address
+  return deployment.deployments?.[deploymentType]?.address
 }
 
 /**

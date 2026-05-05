@@ -49,6 +49,18 @@ describe('deployments utils', () => {
       )
       expect(hasCanonicalDeployment(deployment, chainId)).toBe(false)
     })
+
+    it('returns false when custom deployment has no deployments metadata', () => {
+      const customDeployment = {
+        version: '1.3.0',
+        contractName: 'Custom',
+        released: true,
+        networkAddresses: { [chainId]: '0x1111111111111111111111111111111111111111' },
+        abi: [],
+      } as unknown as SingletonDeploymentV2
+
+      expect(hasCanonicalDeployment(customDeployment, chainId)).toBe(false)
+    })
   })
 
   describe('getCanonicalOrFirstAddress', () => {
@@ -116,6 +128,19 @@ describe('deployments utils', () => {
     it('returns undefined when deployment type does not exist', () => {
       const deployment = makeDeployment({ canonical: { address: canonical, codeHash: '0xhash' } }, {})
       expect(getChainAgnosticAddress(deployment, unknownChainId, 'zksync')).toBeUndefined()
+    })
+
+    it('returns per-chain address when custom deployment has no deployments metadata', () => {
+      const customAddress = '0x1111111111111111111111111111111111111111'
+      const customDeployment = {
+        version: '1.3.0',
+        contractName: 'Custom',
+        released: true,
+        networkAddresses: { [chainId]: customAddress },
+        abi: [],
+      } as unknown as SingletonDeploymentV2
+
+      expect(getChainAgnosticAddress(customDeployment, chainId)).toBe(customAddress)
     })
   })
 

@@ -1,78 +1,36 @@
-import { getSafeSingletonDeployment, getSafeL2SingletonDeployment } from '@/utils/deployments'
 import {
-  getCustomSafeSingletonDeployment,
-  getCustomSafeL2SingletonDeployment,
-} from '@safe-global/utils/services/contracts/customDeployments'
+  getSafeL2SingletonDeployment,
+  getSafeL2SingletonDeployments,
+  getSafeSingletonDeployment,
+  getSafeSingletonDeployments,
+} from '@/utils/deployments'
 
-// Mock the custom deployments
-jest.mock('@/config/customDeployments', () => ({
-  getCustomSafeSingletonDeployment: jest.fn(),
-  getCustomSafeL2SingletonDeployment: jest.fn(),
-  getCustomMultiSendCallOnlyDeployment: jest.fn(),
-  getCustomMultiSendDeployment: jest.fn(),
-  getCustomFallbackHandlerDeployment: jest.fn(),
-  getCustomProxyFactoryDeployment: jest.fn(),
-  getCustomSignMessageLibDeployment: jest.fn(),
-  getCustomCreateCallDeployment: jest.fn(),
-  getCustomSafeMigrationDeployment: jest.fn(),
-  getCustomCompatibilityFallbackHandlerDeployment: jest.fn(),
-  getCustomCompatibilityFallbackHandlerDeployments: jest.fn(),
-  getCustomSafeToL2SetupDeployment: jest.fn(),
-  getCustomSafeToL2MigrationDeployment: jest.fn(),
-}))
+describe('Custom deployments integration', () => {
+  it('returns custom singleton deployments for Mitosis networks', () => {
+    const deployment = getSafeSingletonDeployment({ network: '124816', version: '1.3.0' })
 
-describe('Custom Deployments Integration', () => {
-  beforeEach(() => {
-    jest.clearAllMocks()
+    expect(deployment?.networkAddresses['124816']).toBe('0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552')
+    expect(deployment?.defaultAddress).toBe('0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552')
   })
 
-  it('should return custom deployment if available', () => {
-    const mockCustomDeployment = {
-      version: '1.4.1' as const,
-      abi: [],
-      networkAddresses: { '1': '0xCustomSafeAddress' },
-      defaultAddress: '0xCustomSafeAddress',
-      released: true,
-      contractName: 'CustomSafe',
-    }
+  it('returns custom plural deployments in SingletonDeploymentV2 shape', () => {
+    const deployment = getSafeL2SingletonDeployments({ network: '124816', version: '1.3.0' })
 
-    ;(getCustomSafeSingletonDeployment as jest.Mock).mockReturnValue(mockCustomDeployment)
-
-    const result = getSafeSingletonDeployment({ network: '1', version: '1.4.1' })
-
-    expect(getCustomSafeSingletonDeployment).toHaveBeenCalledWith({ network: '1', version: '1.4.1' })
-    expect(result).toEqual(mockCustomDeployment)
+    expect(deployment?.networkAddresses['124816']).toBe('0x3E5c63644E683549055b9Be8653de26E0B4CD36E')
+    expect(deployment?.deployments).toEqual({ canonical: undefined })
   })
 
-  it('should fallback to safe-deployments if no custom deployment', () => {
-    ;(getCustomSafeSingletonDeployment as jest.Mock).mockReturnValue(undefined)
+  it('does not let no-network custom plural lookups shadow official deployments', () => {
+    const deployment = getSafeL2SingletonDeployments({ version: '1.3.0' })
 
-    const result = getSafeSingletonDeployment({ network: '1', version: '1.4.1' })
-
-    expect(getCustomSafeSingletonDeployment).toHaveBeenCalledWith({ network: '1', version: '1.4.1' })
-    // Should get the official deployment (specific assertion depends on safe-deployments package)
-    expect(result).toBeDefined()
-    expect(result?.version).toBe('1.4.1')
+    expect(deployment?.networkAddresses['137']).toBeDefined()
+    expect(deployment?.networkAddresses['124816']).toBeUndefined()
   })
 
-  it('should handle L2 deployments with custom fallback', () => {
-    ;(getCustomSafeL2SingletonDeployment as jest.Mock).mockReturnValue(undefined)
+  it('falls back to official singleton deployments for unsupported custom networks', () => {
+    const deployment = getSafeL2SingletonDeployment({ network: '137', version: '1.4.1' })
 
-    const result = getSafeL2SingletonDeployment({ network: '137', version: '1.4.1' })
-
-    expect(result).toBeDefined()
-    // Should fallback to official L2 deployment
-  })
-})
-
-describe('Custom Deployments Module', () => {
-  it('should be structured correctly for extensions', () => {
-    // This test validates that the module can be extended
-    expect(getCustomSafeSingletonDeployment).toBeDefined()
-    expect(typeof getCustomSafeSingletonDeployment).toBe('function')
-
-    // Test with empty filter
-    const result = getCustomSafeSingletonDeployment()
-    expect(result).toBeUndefined() // No custom deployments defined by default
+    expect(deployment).toBeDefined()
+    expect(getSafeSingletonDeployments({ version: '1.4.1' })?.deployments.canonical?.address).toBeDefined()
   })
 })
