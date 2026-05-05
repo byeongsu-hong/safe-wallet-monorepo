@@ -7,8 +7,12 @@ import { AppRoutes } from '@/config/routes'
 import type { RootState } from '@/store'
 import type { Chain } from '@safe-global/store/gateway/AUTO_GENERATED/chains'
 import * as slices from '@/store/slices'
+import { FEATURES } from '@safe-global/utils/utils/chains'
+import { useChain } from '@/hooks/useChains'
 
-const mockChain = chainBuilder().with({ chainId: '1' }).build()
+const mockChain = chainBuilder()
+  .with({ chainId: '1', features: [FEATURES.COUNTERFACTUAL] })
+  .build()
 
 jest.mock('@/hooks/useChains', () => ({
   useChain: jest.fn(() => mockChain),
@@ -41,6 +45,7 @@ jest.mock('@/hooks/safes', () => ({
 describe('useSafeItemData', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    ;(useChain as jest.Mock).mockReturnValue(mockChain)
     jest.spyOn(slices, 'useGetSafeOverviewQuery').mockReturnValue({ data: undefined } as never)
   })
 
@@ -200,6 +205,33 @@ describe('useSafeItemData', () => {
 
       expect(result.current.threshold).toBe(2)
       expect(result.current.owners).toEqual([{ value: '0xowner1' }, { value: '0xowner2' }])
+    })
+
+    it('should ignore stale undeployed safes when the chain has counterfactual disabled', () => {
+      ;(useChain as jest.Mock).mockReturnValue(chainBuilder().with({ chainId: '1', features: [] }).build())
+      const safeItem = safeItemBuilder().with({ chainId: '1', address: '0xstale' }).build()
+
+      const { result } = renderHook(() => useSafeItemData(safeItem), {
+        initialReduxState: {
+          undeployedSafes: {
+            '1': {
+              '0xstale': {
+                status: { status: 'PROCESSING' },
+                props: {
+                  safeAccountConfig: {
+                    owners: ['0xowner1', '0xowner2'],
+                    threshold: 2,
+                  },
+                },
+              },
+            },
+          },
+        } as unknown as Partial<RootState>,
+      })
+
+      expect(result.current.undeployedSafe).toBeUndefined()
+      expect(result.current.counterfactualSetup).toBeUndefined()
+      expect(result.current.isActivating).toBe(false)
     })
 
     it('should use default values when no overview or counterfactual data is available', () => {

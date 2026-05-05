@@ -5,9 +5,12 @@ import { useAppSelector } from '@/store'
 const useIsCounterfactualSafe = () => {
   const {
     safeAddress,
-    safe: { chainId },
+    safe: { chainId, deployed },
+    safeLoaded,
   } = useSafeInfo()
-  return useAppSelector((state) => selectIsUndeployedSafe(state, chainId, safeAddress))
+  const isStoredUndeployedSafe = useAppSelector((state) => selectIsUndeployedSafe(state, chainId, safeAddress))
+
+  return isStoredUndeployedSafe && (!safeLoaded || !deployed)
 }
 
 export default useIsCounterfactualSafe

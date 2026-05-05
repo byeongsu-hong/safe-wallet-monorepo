@@ -15,6 +15,7 @@ import { selectAllAddressBooks } from '@/store/addressBookSlice'
 import { useGetSafeOverviewQuery } from '@/store/slices'
 import { defaultSafeInfo } from '@safe-global/store/slices/SafeInfo/utils'
 import { sameAddress } from '@safe-global/utils/utils/addresses'
+import { FEATURES, hasFeature } from '@safe-global/utils/utils/chains'
 import { AppRoutes } from '@/config/routes'
 import { OVERVIEW_LABELS } from '@/services/analytics'
 import type { SafeItem } from '@/hooks/safes'
@@ -39,11 +40,12 @@ export function useSafeItemData(safeItem: SafeItem, options?: UseSafeItemDataOpt
   const isVisible = useOnceVisible(elementRef)
   const getHref = useGetHref(router)
 
-  const undeployedSafe = useAppSelector((state) => selectUndeployedSafe(state, chainId, address))
+  const storedUndeployedSafe = useAppSelector((state) => selectUndeployedSafe(state, chainId, address))
   const name = useAppSelector(selectAllAddressBooks)[chainId]?.[address]
 
   const isCurrentSafe = chainId === currChainId && sameAddress(safeAddress, address)
   const isWelcomePage = router.pathname === AppRoutes.welcome.accounts
+  const undeployedSafe = chain && !hasFeature(chain, FEATURES.COUNTERFACTUAL) ? undefined : storedUndeployedSafe
 
   const href = useMemo(() => {
     return chain ? getHref(chain, address) : ''
