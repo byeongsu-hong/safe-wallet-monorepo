@@ -19,7 +19,7 @@ jest.mock('@/hooks/useChains', () => ({
 }))
 
 jest.mock('@safe-global/store/gateway/AUTO_GENERATED/owners', () => ({
-  useOwnersGetAllSafesByOwnerV2Query: jest.fn(),
+  useOwnersGetSafesByOwnerV1Query: jest.fn(),
 }))
 
 jest.mock('@/hooks/useNestedSafesVisibility', () => ({
@@ -55,12 +55,12 @@ jest.mock('@/components/ui/tooltip', () => ({
 
 import useSafeInfo from '@/hooks/useSafeInfo'
 import { useHasFeature } from '@/hooks/useChains'
-import { useOwnersGetAllSafesByOwnerV2Query } from '@safe-global/store/gateway/AUTO_GENERATED/owners'
+import { useOwnersGetSafesByOwnerV1Query } from '@safe-global/store/gateway/AUTO_GENERATED/owners'
 import { useNestedSafesVisibility } from '@/hooks/useNestedSafesVisibility'
 
 const mockUseSafeInfo = useSafeInfo as jest.Mock
 const mockUseHasFeature = useHasFeature as jest.Mock
-const mockUseOwnersQuery = useOwnersGetAllSafesByOwnerV2Query as jest.Mock
+const mockUseOwnersQuery = useOwnersGetSafesByOwnerV1Query as jest.Mock
 const mockUseNestedSafesVisibility = useNestedSafesVisibility as jest.Mock
 
 describe('SpaceNestedSafesButton', () => {
@@ -71,7 +71,7 @@ describe('SpaceNestedSafesButton', () => {
       safe: { chainId: '1', address: { value: '0xSafe1' }, deployed: true },
     })
     mockUseHasFeature.mockReturnValue(true)
-    mockUseOwnersQuery.mockReturnValue({ currentData: { '1': ['0xNested1', '0xNested2'] } })
+    mockUseOwnersQuery.mockReturnValue({ currentData: { safes: ['0xNested1', '0xNested2'] } })
     mockUseNestedSafesVisibility.mockReturnValue({
       visibleSafes: [{ address: '0xNested1' }],
       allSafesWithStatus: [{ address: '0xNested1' }, { address: '0xNested2' }],
@@ -100,7 +100,7 @@ describe('SpaceNestedSafesButton', () => {
 
   it('renders the button when feature is enabled and safe is deployed', () => {
     render(<SpaceNestedSafesButton />)
-    expect(screen.getByTestId('space-nested-safes-button')).toBeInTheDocument()
+    expect(screen.getByTestId('nested-safes-button')).toBeInTheDocument()
   })
 
   it('displays the visible safes count in the badge', () => {
@@ -148,12 +148,12 @@ describe('SpaceNestedSafesButton', () => {
     })
 
     render(<SpaceNestedSafesButton />)
-    expect(screen.getByTestId('space-nested-safes-button')).toBeInTheDocument()
+    expect(screen.getByTestId('nested-safes-button')).toBeInTheDocument()
     expect(screen.queryByText('0')).not.toBeInTheDocument()
   })
 
   it('does not display badge when count is zero', () => {
-    mockUseOwnersQuery.mockReturnValue({ currentData: { '1': [] } })
+    mockUseOwnersQuery.mockReturnValue({ currentData: { safes: [] } })
     mockUseNestedSafesVisibility.mockReturnValue({
       visibleSafes: [],
       allSafesWithStatus: [],
@@ -170,7 +170,7 @@ describe('SpaceNestedSafesButton', () => {
   it('calls startFiltering when clicked', () => {
     render(<SpaceNestedSafesButton />)
 
-    fireEvent.click(screen.getByTestId('space-nested-safes-button'))
+    fireEvent.click(screen.getByTestId('nested-safes-button'))
     expect(mockStartFiltering).toHaveBeenCalledTimes(1)
   })
 
@@ -179,7 +179,7 @@ describe('SpaceNestedSafesButton', () => {
 
     expect(screen.getByTestId('nested-safes-popover')).toHaveAttribute('data-open', 'false')
 
-    fireEvent.click(screen.getByTestId('space-nested-safes-button'))
+    fireEvent.click(screen.getByTestId('nested-safes-button'))
     expect(screen.getByTestId('nested-safes-popover')).toHaveAttribute('data-open', 'true')
   })
 

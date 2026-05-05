@@ -68,6 +68,8 @@ const rootReducer = combineReducers({
   [slices.hnStateSlice.name]: slices.hnStateSlice.reducer,
   [slices.hnQueueAssessmentsSlice.name]: slices.hnQueueAssessmentsSlice.reducer,
   [slices.calendlySlice.name]: slices.calendlySlice.reducer,
+  [slices.globalSearchSlice.name]: slices.globalSearchSlice.reducer,
+  [slices.safeActionsModalSlice.name]: slices.safeActionsModalSlice.reducer,
   [ofacApi.reducerPath]: ofacApi.reducer,
   [safePassApi.reducerPath]: safePassApi.reducer,
   [hypernativeApi.reducerPath]: hypernativeApi.reducer,
@@ -146,7 +148,8 @@ export const _hydrationReducer: typeof rootReducer = (state, action) => {
     }
 
     // Mark the store as hydrated so guards wait for persisted auth state
-    nextState.auth = { ...nextState.auth, isStoreHydrated: true }
+    // Reset isOidcLoginPending to avoid stale state from a previous session
+    nextState.auth = { ...nextState.auth, isStoreHydrated: true, isOidcLoginPending: false }
 
     return nextState
   }

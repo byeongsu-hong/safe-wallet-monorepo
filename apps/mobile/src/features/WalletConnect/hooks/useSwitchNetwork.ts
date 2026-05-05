@@ -29,16 +29,18 @@ export function useSwitchNetwork() {
       return
     }
     if (String(walletChainId) !== activeSafe.chainId) {
-      await appKitSwitchNetwork(`eip155:${activeSafe.chainId}`).catch(() => {
+      await appKitSwitchNetwork(`eip155:${parseInt(activeSafe.chainId, 10)}`).catch(() => {
         Logger.warn('Failed to switch wallet network, continuing with validation')
       })
     }
   }, [walletChainId, activeSafe, appKitSwitchNetwork])
 
   const switchNetwork = useCallback(
-    (chainId: string) => appKitSwitchNetwork(`eip155:${chainId}`),
+    (chainId: string) => appKitSwitchNetwork(`eip155:${parseInt(chainId, 10)}`),
     [appKitSwitchNetwork],
   )
 
   return { switchNetworkIfNeeded, switchNetwork, isWrongNetwork }
 }
+
+export type SwitchNetworkResult = ReturnType<typeof useSwitchNetwork>

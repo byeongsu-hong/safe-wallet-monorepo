@@ -33,6 +33,7 @@ function getFlag(name) {
 const workspace = getFlag('workspace') ?? 'web'
 const isCompact = args.includes('--compact')
 const isChanged = args.includes('--changed')
+const testMaxWorkers = process.env.VERIFY_TEST_MAX_WORKERS
 
 // ---------------------------------------------------------------------------
 // Changed-file detection (--changed mode)
@@ -207,7 +208,7 @@ function buildChecks() {
       checks.push({
         label: 'tests',
         cmd: 'yarn',
-        args: [
+        args: withTestMaxWorkers([
           'workspace',
           workspacePkg,
           'test',
@@ -215,7 +216,7 @@ function buildChecks() {
           ...testableFiles,
           '--watchAll=false',
           '--passWithNoTests',
-        ],
+        ]),
       })
     }
 
@@ -245,9 +246,13 @@ function buildFullChecks() {
     {
       label: 'tests',
       cmd: 'yarn',
-      args: ['workspace', workspacePkg, 'test', '--watchAll=false'],
+      args: withTestMaxWorkers(['workspace', workspacePkg, 'test', '--watchAll=false']),
     },
   ]
+}
+
+function withTestMaxWorkers(args) {
+  return testMaxWorkers ? [...args, `--maxWorkers=${testMaxWorkers}`] : args
 }
 
 const { checks, changedFiles } = buildChecks()
